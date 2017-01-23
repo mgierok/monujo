@@ -45,7 +45,7 @@ CREATE TABLE "quotes" (
     "low" real,
     "close" real,
     "volume" bigint,
-    "openint" smallint
+    "openint" bigint
 );
 
 
