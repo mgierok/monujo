@@ -5,12 +5,14 @@ CONF_FILE=$DIR/../conf/db.conf
 
 if [ ! -e $CONF_FILE ] ; then
     echo "Please run install.sh first!"
+    exit
 fi
 
 source $CONF_FILE
 
 if [ -z $DB_HOSTNAME ] || [ -z $DB_USERNAME ] || [ -z $DB_PASSWORD ] || [ -z $DB_NAME ] || [ -z $QUOTES_PATH ] ; then
     echo -e "Config file seems to be not filled properly!\nSome variables have not been set."
+    exit
 fi
 
 if [ -z $1 ] ; then
