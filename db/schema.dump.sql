@@ -25,6 +25,17 @@ CREATE TYPE "currency" AS ENUM (
     'EUR'
 );
 
+
+--
+-- Name: transaction_operation_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE "transaction_operation_type" AS ENUM (
+    'buy',
+    'sell'
+);
+
+
 --
 -- Name: latest_quotes_before_insert(); Type: FUNCTION; Schema: public; Owner: -
 --
@@ -117,10 +128,54 @@ CREATE TABLE "quotes" (
 
 
 --
+-- Name: transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "transactions" (
+    "transaction_id" integer NOT NULL,
+    "portfolio_id" integer,
+    "date" "date",
+    "ticker" character(8),
+    "price" real,
+    "type" "transaction_operation_type",
+    "currency" "currency",
+    "shares" real,
+    "commision" real,
+    "exchange_rate" real
+);
+
+
+--
+-- Name: transactions_transaction_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE "transactions_transaction_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: transactions_transaction_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE "transactions_transaction_id_seq" OWNED BY "transactions"."transaction_id";
+
+
+--
 -- Name: portfolio_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY "portfolios" ALTER COLUMN "portfolio_id" SET DEFAULT "nextval"('"portfolios_portfolio_id_seq"'::"regclass");
+
+
+--
+-- Name: transaction_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "transactions" ALTER COLUMN "transaction_id" SET DEFAULT "nextval"('"transactions_transaction_id_seq"'::"regclass");
 
 
 --
@@ -148,6 +203,14 @@ ALTER TABLE ONLY "quotes"
 
 
 --
+-- Name: transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "transactions"
+    ADD CONSTRAINT "transactions_pkey" PRIMARY KEY ("transaction_id");
+
+
+--
 -- Name: latest_quotes_before_insert_trigger; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -159,6 +222,14 @@ CREATE TRIGGER "latest_quotes_before_insert_trigger" BEFORE INSERT ON "latest_qu
 --
 
 CREATE TRIGGER "quotes_before_insert_trigger" BEFORE INSERT ON "quotes" FOR EACH ROW EXECUTE PROCEDURE "quotes_before_insert"();
+
+
+--
+-- Name: transactions_portfolio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "transactions"
+    ADD CONSTRAINT "transactions_portfolio_id_fkey" FOREIGN KEY ("portfolio_id") REFERENCES "portfolios"("portfolio_id");
 
 
 --
