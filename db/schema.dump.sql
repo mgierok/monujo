@@ -207,7 +207,37 @@ CREATE VIEW "shares" AS
         CASE
             WHEN ("t"."type" = 'buy'::"transaction_operation_type") THEN 1
             ELSE (-1)
-        END)::double precision))) * (100)::double precision))::numeric, 2) AS "percentage_gain"
+        END)::double precision))) * (100)::double precision))::numeric, 2) AS "percentage_gain",
+    "round"((((("sum"(
+        CASE
+            WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
+            ELSE ("t"."shares")::double precision
+        END) * "q"."close") *
+        CASE
+            WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
+            ELSE "e"."close"
+        END) - "sum"(((("t"."shares" * "t"."price") * "t"."exchange_rate") * (
+        CASE
+            WHEN ("t"."type" = 'buy'::"transaction_operation_type") THEN 1
+            ELSE (-1)
+        END)::double precision))))::numeric, 2) AS "gain_pln",
+    "round"((((((("sum"(
+        CASE
+            WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
+            ELSE ("t"."shares")::double precision
+        END) * "q"."close") *
+        CASE
+            WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
+            ELSE "e"."close"
+        END) - "sum"(((("t"."shares" * "t"."price") * "t"."exchange_rate") * (
+        CASE
+            WHEN ("t"."type" = 'buy'::"transaction_operation_type") THEN 1
+            ELSE (-1)
+        END)::double precision))) / "sum"(((("t"."shares" * "t"."price") * "t"."exchange_rate") * (
+        CASE
+            WHEN ("t"."type" = 'buy'::"transaction_operation_type") THEN 1
+            ELSE (-1)
+        END)::double precision))) * (100)::double precision))::numeric, 2) AS "percentage_gain_pln"
    FROM (("transactions" "t"
      LEFT JOIN "latest_quotes" "q" ON (("t"."ticker" = "q"."ticker")))
      LEFT JOIN "latest_quotes" "e" ON (((("e"."ticker")::"text" = ("t"."currency" || 'PLN'::"text")) AND ("t"."currency" <> 'PLN'::"currency"))))
