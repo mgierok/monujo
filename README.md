@@ -18,3 +18,10 @@ The investment portfolio
  2. Go to http://stooq.com/db/
  3. Download latest daily quotes
  4. Run **./scripts/update_quotes [path_to_downloaded_file]**
+
+##HowTo Update Latest Quotes Only?
+
+ 1. Please make sure tickers.conf file is populated
+ 2. Go to http://stooq.com/db/
+ 3. Download latest daily quotes
+ 4. Run **./scripts/update_latest_quotes [path_to_downloaded_file]**

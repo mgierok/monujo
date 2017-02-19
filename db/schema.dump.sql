@@ -16,6 +16,20 @@ SET row_security = off;
 SET search_path = "public", pg_catalog;
 
 --
+-- Name: latest_quotes_before_insert(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION "latest_quotes_before_insert"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+                    BEGIN
+                        DELETE FROM latest_quotes where "ticker" = NEW."ticker";
+                        RETURN NEW;
+                    END;
+                    $$;
+
+
+--
 -- Name: quotes_before_insert(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -29,9 +43,22 @@ CREATE FUNCTION "quotes_before_insert"() RETURNS "trigger"
                     $$;
 
 
-SET default_tablespace = '';
-
 SET default_with_oids = false;
+
+--
+-- Name: latest_quotes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "latest_quotes" (
+    "ticker" character(8) NOT NULL,
+    "date" "date" NOT NULL,
+    "open" real,
+    "high" real,
+    "low" real,
+    "close" real,
+    "volume" bigint,
+    "openint" bigint
+);
 
 --
 -- Name: quotes; Type: TABLE; Schema: public; Owner: -
@@ -48,6 +75,13 @@ CREATE TABLE "quotes" (
     "openint" bigint
 );
 
+--
+-- Name: latest_quotes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "latest_quotes"
+    ADD CONSTRAINT "latest_quotes_pkey" PRIMARY KEY ("ticker");
+
 
 --
 -- Name: quotes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
@@ -55,6 +89,13 @@ CREATE TABLE "quotes" (
 
 ALTER TABLE ONLY "quotes"
     ADD CONSTRAINT "quotes_pkey" PRIMARY KEY ("ticker", "date");
+
+
+--
+-- Name: latest_quotes_before_insert_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER "latest_quotes_before_insert_trigger" BEFORE INSERT ON "latest_quotes" FOR EACH ROW EXECUTE PROCEDURE "latest_quotes_before_insert"();
 
 
 --
