@@ -88,7 +88,7 @@ CREATE TABLE "latest_quotes" (
 
 CREATE TABLE "portfolios" (
     "portfolio_id" integer NOT NULL,
-    "name" character varying(128),
+    "name" character varying(128) NOT NULL,
     "currency" "currency" NOT NULL
 );
 
@@ -134,15 +134,19 @@ CREATE TABLE "quotes" (
 
 CREATE TABLE "transactions" (
     "transaction_id" integer NOT NULL,
-    "portfolio_id" integer,
-    "date" "date",
-    "ticker" character(8),
-    "price" real,
-    "type" "transaction_operation_type",
-    "currency" "currency",
-    "shares" real,
-    "commision" real,
-    "exchange_rate" real
+    "portfolio_id" integer NOT NULL,
+    "date" "date" NOT NULL,
+    "ticker" character(8) NOT NULL,
+    "price" real NOT NULL,
+    "type" "transaction_operation_type" NOT NULL,
+    "currency" "currency" NOT NULL,
+    "shares" real NOT NULL,
+    "commision" real NOT NULL,
+    "exchange_rate" real NOT NULL,
+    CONSTRAINT "transactions_commision_check" CHECK (("commision" >= (0)::double precision)),
+    CONSTRAINT "transactions_exchange_rate_check" CHECK (("exchange_rate" > (0)::double precision)),
+    CONSTRAINT "transactions_price_check" CHECK (("price" > (0)::double precision)),
+    CONSTRAINT "transactions_shares_check" CHECK (("shares" > (0)::double precision))
 );
 
 
