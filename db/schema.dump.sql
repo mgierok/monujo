@@ -70,6 +70,36 @@ CREATE TABLE "latest_quotes" (
     "openint" bigint
 );
 
+
+--
+-- Name: portfolios; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE "portfolios" (
+    "portfolio_id" integer NOT NULL,
+    "name" character varying(128)
+);
+
+
+--
+-- Name: portfolios_portfolio_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE "portfolios_portfolio_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: portfolios_portfolio_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE "portfolios_portfolio_id_seq" OWNED BY "portfolios"."portfolio_id";
+
+
 --
 -- Name: quotes; Type: TABLE; Schema: public; Owner: -
 --
@@ -85,12 +115,28 @@ CREATE TABLE "quotes" (
     "openint" bigint
 );
 
+
+--
+-- Name: portfolio_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "portfolios" ALTER COLUMN "portfolio_id" SET DEFAULT "nextval"('"portfolios_portfolio_id_seq"'::"regclass");
+
+
 --
 -- Name: latest_quotes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY "latest_quotes"
     ADD CONSTRAINT "latest_quotes_pkey" PRIMARY KEY ("ticker");
+
+
+--
+-- Name: portfolios_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "portfolios"
+    ADD CONSTRAINT "portfolios_pkey" PRIMARY KEY ("portfolio_id");
 
 
 --
