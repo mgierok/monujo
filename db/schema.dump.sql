@@ -88,7 +88,8 @@ CREATE TABLE "latest_quotes" (
 
 CREATE TABLE "portfolios" (
     "portfolio_id" integer NOT NULL,
-    "name" character varying(128)
+    "name" character varying(128),
+    "currency" "currency" NOT NULL
 );
 
 
@@ -165,7 +166,7 @@ CREATE VIEW "shares" AS
         END) * "q"."close"))::numeric, 2) AS "market_value",
     "t"."currency",
         CASE
-            WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
+            WHEN ("t"."currency" = "p"."currency") THEN (1)::real
             ELSE "e"."close"
         END AS "exchange_rate",
     "round"(((("sum"(
@@ -174,9 +175,9 @@ CREATE VIEW "shares" AS
             ELSE ("t"."shares")::double precision
         END) * "q"."close") *
         CASE
-            WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
+            WHEN ("t"."currency" = "p"."currency") THEN (1)::real
             ELSE "e"."close"
-        END))::numeric) AS "market_value_pln",
+        END))::numeric) AS "market_value_base_currency",
     "round"((("sum"((("t"."shares" * "t"."price") * (
         CASE
             WHEN ("t"."type" = 'buy'::"transaction_operation_type") THEN 1
@@ -214,20 +215,20 @@ CREATE VIEW "shares" AS
             ELSE ("t"."shares")::double precision
         END) * "q"."close") *
         CASE
-            WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
+            WHEN ("t"."currency" = "p"."currency") THEN (1)::real
             ELSE "e"."close"
         END) - "sum"(((("t"."shares" * "t"."price") * "t"."exchange_rate") * (
         CASE
             WHEN ("t"."type" = 'buy'::"transaction_operation_type") THEN 1
             ELSE (-1)
-        END)::double precision))))::numeric, 2) AS "gain_pln",
+        END)::double precision))))::numeric, 2) AS "gain_base_currency",
     "round"((((((("sum"(
         CASE
             WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
             ELSE ("t"."shares")::double precision
         END) * "q"."close") *
         CASE
-            WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
+            WHEN ("t"."currency" = "p"."currency") THEN (1)::real
             ELSE "e"."close"
         END) - "sum"(((("t"."shares" * "t"."price") * "t"."exchange_rate") * (
         CASE
@@ -237,11 +238,12 @@ CREATE VIEW "shares" AS
         CASE
             WHEN ("t"."type" = 'buy'::"transaction_operation_type") THEN 1
             ELSE (-1)
-        END)::double precision))) * (100)::double precision))::numeric, 2) AS "percentage_gain_pln"
-   FROM (("transactions" "t"
+        END)::double precision))) * (100)::double precision))::numeric, 2) AS "percentage_gain_base_currency"
+   FROM ((("transactions" "t"
+     JOIN "portfolios" "p" ON (("t"."portfolio_id" = "p"."portfolio_id")))
      LEFT JOIN "latest_quotes" "q" ON (("t"."ticker" = "q"."ticker")))
-     LEFT JOIN "latest_quotes" "e" ON (((("e"."ticker")::"text" = ("t"."currency" || 'PLN'::"text")) AND ("t"."currency" <> 'PLN'::"currency"))))
-  GROUP BY "t"."portfolio_id", "t"."ticker", "q"."close", "t"."currency", "e"."close"
+     LEFT JOIN "latest_quotes" "e" ON (((("e"."ticker")::"text" = (("t"."currency")::"text" || ("p"."currency")::"text")) AND ("t"."currency" <> "p"."currency"))))
+  GROUP BY "t"."portfolio_id", "t"."ticker", "q"."close", "t"."currency", "e"."close", "p"."currency"
  HAVING ("sum"(
         CASE
             WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
