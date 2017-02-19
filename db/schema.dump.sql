@@ -146,6 +146,49 @@ CREATE TABLE "transactions" (
 
 
 --
+-- Name: shares; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW "shares" AS
+ SELECT "t"."portfolio_id",
+    "t"."ticker",
+    "sum"(
+        CASE
+            WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
+            ELSE ("t"."shares")::double precision
+        END) AS "shares",
+    "q"."close" AS "price",
+    "round"((("sum"(
+        CASE
+            WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
+            ELSE ("t"."shares")::double precision
+        END) * "q"."close"))::numeric, 2) AS "cache_value",
+    "t"."currency",
+        CASE
+            WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
+            ELSE "e"."close"
+        END AS "exchange_rate",
+    "round"(((("sum"(
+        CASE
+            WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
+            ELSE ("t"."shares")::double precision
+        END) * "q"."close") *
+        CASE
+            WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
+            ELSE "e"."close"
+        END))::numeric) AS "cache_value_pln"
+   FROM (("transactions" "t"
+     LEFT JOIN "latest_quotes" "q" ON (("t"."ticker" = "q"."ticker")))
+     LEFT JOIN "latest_quotes" "e" ON (((("e"."ticker")::"text" = ("t"."currency" || 'PLN'::"text")) AND ("t"."currency" <> 'PLN'::"currency"))))
+  GROUP BY "t"."portfolio_id", "t"."ticker", "q"."close", "t"."currency", "e"."close"
+ HAVING ("sum"(
+        CASE
+            WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
+            ELSE ("t"."shares")::double precision
+        END) > (0)::double precision);
+
+
+--
 -- Name: transactions_transaction_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
