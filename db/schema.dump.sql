@@ -16,6 +16,16 @@ SET row_security = off;
 SET search_path = "public", pg_catalog;
 
 --
+-- Name: currency; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE "currency" AS ENUM (
+    'PLN',
+    'USD',
+    'EUR'
+);
+
+--
 -- Name: latest_quotes_before_insert(); Type: FUNCTION; Schema: public; Owner: -
 --
 
