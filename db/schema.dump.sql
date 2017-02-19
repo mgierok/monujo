@@ -157,12 +157,12 @@ CREATE VIEW "shares" AS
             WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
             ELSE ("t"."shares")::double precision
         END) AS "shares",
-    "q"."close" AS "price",
+    "q"."close" AS "last_price",
     "round"((("sum"(
         CASE
             WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
             ELSE ("t"."shares")::double precision
-        END) * "q"."close"))::numeric, 2) AS "cache_value",
+        END) * "q"."close"))::numeric, 2) AS "market_value",
     "t"."currency",
         CASE
             WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
@@ -176,7 +176,7 @@ CREATE VIEW "shares" AS
         CASE
             WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
             ELSE "e"."close"
-        END))::numeric) AS "cache_value_pln",
+        END))::numeric) AS "market_value_pln",
     "round"((("sum"((("t"."shares" * "t"."price") * (
         CASE
             WHEN ("t"."type" = 'buy'::"transaction_operation_type") THEN 1
