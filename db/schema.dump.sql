@@ -176,7 +176,16 @@ CREATE VIEW "shares" AS
         CASE
             WHEN ("t"."currency" = 'PLN'::"currency") THEN (1)::real
             ELSE "e"."close"
-        END))::numeric) AS "cache_value_pln"
+        END))::numeric) AS "cache_value_pln",
+    "round"((("sum"((("t"."shares" * "t"."price") * (
+        CASE
+            WHEN ("t"."type" = 'buy'::"transaction_operation_type") THEN 1
+            ELSE (-1)
+        END)::double precision)) / "sum"(
+        CASE
+            WHEN ("t"."type" = 'sell'::"transaction_operation_type") THEN ("t"."shares" * ((-1))::double precision)
+            ELSE ("t"."shares")::double precision
+        END)))::numeric, 2) AS "average_price"
    FROM (("transactions" "t"
      LEFT JOIN "latest_quotes" "q" ON (("t"."ticker" = "q"."ticker")))
      LEFT JOIN "latest_quotes" "e" ON (((("e"."ticker")::"text" = ("t"."currency" || 'PLN'::"text")) AND ("t"."currency" <> 'PLN'::"currency"))))
