@@ -27,6 +27,17 @@ CREATE TYPE currency AS ENUM (
 
 
 --
+-- Name: financing_operation; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE financing_operation AS ENUM (
+    'deposit',
+    'withdraw',
+    'dividend'
+);
+
+
+--
 -- Name: transaction_operation_type; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -83,6 +94,38 @@ CREATE TABLE latest_quotes (
 
 
 --
+-- Name: operations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE operations (
+    operation_id integer NOT NULL,
+    portfolio_id integer NOT NULL,
+    date date NOT NULL,
+    type financing_operation NOT NULL,
+    value real
+);
+
+
+--
+-- Name: operations_operation_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE operations_operation_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: operations_operation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE operations_operation_id_seq OWNED BY operations.operation_id;
+
+
+--
 -- Name: portfolios; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -91,6 +134,54 @@ CREATE TABLE portfolios (
     name character varying(128) NOT NULL,
     currency currency NOT NULL
 );
+
+
+--
+-- Name: transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE transactions (
+    transaction_id integer NOT NULL,
+    portfolio_id integer NOT NULL,
+    date date NOT NULL,
+    ticker character(8) NOT NULL,
+    price real NOT NULL,
+    type transaction_operation_type NOT NULL,
+    currency currency NOT NULL,
+    shares real NOT NULL,
+    commision real NOT NULL,
+    exchange_rate real NOT NULL,
+    CONSTRAINT transactions_commision_check CHECK ((commision >= (0)::double precision)),
+    CONSTRAINT transactions_exchange_rate_check CHECK ((exchange_rate > (0)::double precision)),
+    CONSTRAINT transactions_price_check CHECK ((price > (0)::double precision)),
+    CONSTRAINT transactions_shares_check CHECK ((shares > (0)::double precision))
+);
+
+
+--
+-- Name: portfolio_summary; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW portfolio_summary AS
+ SELECT p.portfolio_id,
+    p.name,
+    p.currency,
+    round(((sum((o.value * (
+        CASE
+            WHEN (o.type = 'withdraw'::financing_operation) THEN (-1)
+            ELSE 1
+        END)::double precision)) - t.invested_value))::numeric, 2) AS cache_value
+   FROM ((portfolios p
+     LEFT JOIN operations o ON ((o.portfolio_id = p.portfolio_id)))
+     LEFT JOIN ( SELECT t_1.portfolio_id,
+            sum((t_1.commision + (((t_1.shares * t_1.price) * t_1.exchange_rate) * (
+                CASE
+                    WHEN (t_1.type = 'buy'::transaction_operation_type) THEN 1
+                    ELSE (-1)
+                END)::double precision))) AS invested_value
+           FROM transactions t_1
+          GROUP BY t_1.portfolio_id) t ON ((t.portfolio_id = o.portfolio_id)))
+  GROUP BY p.portfolio_id, p.name, p.currency, t.invested_value;
 
 
 --
@@ -125,28 +216,6 @@ CREATE TABLE quotes (
     close real,
     volume bigint,
     openint bigint
-);
-
-
---
--- Name: transactions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE transactions (
-    transaction_id integer NOT NULL,
-    portfolio_id integer NOT NULL,
-    date date NOT NULL,
-    ticker character(8) NOT NULL,
-    price real NOT NULL,
-    type transaction_operation_type NOT NULL,
-    currency currency NOT NULL,
-    shares real NOT NULL,
-    commision real NOT NULL,
-    exchange_rate real NOT NULL,
-    CONSTRAINT transactions_commision_check CHECK ((commision >= (0)::double precision)),
-    CONSTRAINT transactions_exchange_rate_check CHECK ((exchange_rate > (0)::double precision)),
-    CONSTRAINT transactions_price_check CHECK ((price > (0)::double precision)),
-    CONSTRAINT transactions_shares_check CHECK ((shares > (0)::double precision))
 );
 
 
@@ -275,6 +344,13 @@ ALTER SEQUENCE transactions_transaction_id_seq OWNED BY transactions.transaction
 
 
 --
+-- Name: operation_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY operations ALTER COLUMN operation_id SET DEFAULT nextval('operations_operation_id_seq'::regclass);
+
+
+--
 -- Name: portfolio_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -294,6 +370,14 @@ ALTER TABLE ONLY transactions ALTER COLUMN transaction_id SET DEFAULT nextval('t
 
 ALTER TABLE ONLY latest_quotes
     ADD CONSTRAINT latest_quotes_pkey PRIMARY KEY (ticker);
+
+
+--
+-- Name: operations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY operations
+    ADD CONSTRAINT operations_pkey PRIMARY KEY (operation_id);
 
 
 --
@@ -332,6 +416,14 @@ CREATE TRIGGER latest_quotes_before_insert_trigger BEFORE INSERT ON latest_quote
 --
 
 CREATE TRIGGER quotes_before_insert_trigger BEFORE INSERT ON quotes FOR EACH ROW EXECUTE PROCEDURE quotes_before_insert();
+
+
+--
+-- Name: operations_portfolio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY operations
+    ADD CONSTRAINT operations_portfolio_id_fkey FOREIGN KEY (portfolio_id) REFERENCES portfolios(portfolio_id);
 
 
 --
