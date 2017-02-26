@@ -286,84 +286,32 @@ CREATE TABLE remaining_shares (
 CREATE VIEW shares AS
  SELECT t.portfolio_id,
     t.ticker,
-    sum(
-        CASE
-            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE t.shares
-        END) AS shares,
+    sum(rs.shares) AS shares,
     q.close AS last_price,
-    round(((sum(
-        CASE
-            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE t.shares
-        END) * q.close))::numeric, 2) AS market_value,
+    round(((sum(rs.shares) * q.close))::numeric, 2) AS market_value,
     t.currency,
         CASE
             WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
             ELSE e.close
         END AS exchange_rate,
-    round((((sum(
-        CASE
-            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE t.shares
-        END) * q.close) *
+    round((((sum(rs.shares) * q.close) *
         CASE
             WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
             ELSE e.close
         END))::numeric) AS market_value_base_currency,
     round(((sum((rs.shares * t.price)) / sum(rs.shares)))::numeric, 2) AS average_price,
-    round((((sum(
-        CASE
-            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE t.shares
-        END) * q.close) - sum(((t.shares * t.price) * (
-        CASE
-            WHEN (t.type = 'buy'::transaction_operation_type) THEN 1
-            ELSE (-1)
-        END)::double precision))))::numeric, 2) AS gain,
-    round((((((sum(
-        CASE
-            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE t.shares
-        END) * q.close) - sum(((t.shares * t.price) * (
-        CASE
-            WHEN (t.type = 'buy'::transaction_operation_type) THEN 1
-            ELSE (-1)
-        END)::double precision))) / sum(((t.shares * t.price) * (
-        CASE
-            WHEN (t.type = 'buy'::transaction_operation_type) THEN 1
-            ELSE (-1)
-        END)::double precision))) * (100)::double precision))::numeric, 2) AS percentage_gain,
-    round(((((sum(
-        CASE
-            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE t.shares
-        END) * q.close) *
+    round((((sum(rs.shares) * q.close) - sum((rs.shares * t.price))))::numeric, 2) AS gain,
+    round((((((sum(rs.shares) * q.close) - sum((rs.shares * t.price))) / sum((rs.shares * t.price))) * (100)::double precision))::numeric, 2) AS percentage_gain,
+    round(((((sum(rs.shares) * q.close) *
         CASE
             WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
             ELSE e.close
-        END) - sum((((t.shares * t.price) * t.exchange_rate) * (
-        CASE
-            WHEN (t.type = 'buy'::transaction_operation_type) THEN 1
-            ELSE (-1)
-        END)::double precision))))::numeric, 2) AS gain_base_currency,
-    round(((((((sum(
-        CASE
-            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE t.shares
-        END) * q.close) *
+        END) - sum(((rs.shares * t.price) * t.exchange_rate))))::numeric, 2) AS gain_base_currency,
+    round(((((((sum(rs.shares) * q.close) *
         CASE
             WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
             ELSE e.close
-        END) - sum((((t.shares * t.price) * t.exchange_rate) * (
-        CASE
-            WHEN (t.type = 'buy'::transaction_operation_type) THEN 1
-            ELSE (-1)
-        END)::double precision))) / sum((((t.shares * t.price) * t.exchange_rate) * (
-        CASE
-            WHEN (t.type = 'buy'::transaction_operation_type) THEN 1
-            ELSE (-1)
-        END)::double precision))) * (100)::double precision))::numeric, 2) AS percentage_gain_base_currency
+        END) - sum(((rs.shares * t.price) * t.exchange_rate))) / sum(((rs.shares * t.price) * t.exchange_rate))) * (100)::double precision))::numeric, 2) AS percentage_gain_base_currency
    FROM ((((transactions t
      JOIN portfolios p ON ((t.portfolio_id = p.portfolio_id)))
      LEFT JOIN latest_quotes q ON ((t.ticker = q.ticker)))
