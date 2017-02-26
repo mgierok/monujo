@@ -311,15 +311,7 @@ CREATE VIEW shares AS
             WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
             ELSE e.close
         END))::numeric) AS market_value_base_currency,
-    round(((sum(((t.shares * t.price) * (
-        CASE
-            WHEN (t.type = 'buy'::transaction_operation_type) THEN 1
-            ELSE (-1)
-        END)::double precision)) / sum(
-        CASE
-            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE t.shares
-        END)))::numeric, 2) AS average_price,
+    round(((sum((rs.shares * t.price)) / sum(rs.shares)))::numeric, 2) AS average_price,
     round((((sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
@@ -372,10 +364,11 @@ CREATE VIEW shares AS
             WHEN (t.type = 'buy'::transaction_operation_type) THEN 1
             ELSE (-1)
         END)::double precision))) * (100)::double precision))::numeric, 2) AS percentage_gain_base_currency
-   FROM (((transactions t
+   FROM ((((transactions t
      JOIN portfolios p ON ((t.portfolio_id = p.portfolio_id)))
      LEFT JOIN latest_quotes q ON ((t.ticker = q.ticker)))
      LEFT JOIN latest_quotes e ON ((((e.ticker)::text = ((t.currency)::text || (p.currency)::text)) AND (t.currency <> p.currency))))
+     LEFT JOIN remaining_shares rs ON ((rs.transaction_id = t.transaction_id)))
   GROUP BY t.portfolio_id, t.ticker, q.close, t.currency, e.close, p.currency
  HAVING (sum(
         CASE
