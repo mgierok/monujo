@@ -75,6 +75,56 @@ CREATE FUNCTION quotes_before_insert() RETURNS trigger
                     $$;
 
 
+--
+-- Name: transactions_after_insert(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION transactions_after_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	v_shares transactions.shares%TYPE;
+	v_remaining_shares remaining_shares.shares%TYPE;
+	v_transaction_id remaining_shares.transaction_id%TYPE;
+	
+	BEGIN
+		IF NEW."type" = 'buy'::transaction_operation_type THEN
+			INSERT INTO remaining_shares ("transaction_id", "shares") VALUES (NEW."transaction_id", NEW."shares");
+		ELSIF NEW."type" = 'sell'::transaction_operation_type THEN
+
+			SELECT SUM(rs.shares) INTO v_remaining_shares
+			FROM transactions t
+			JOIN remaining_shares rs ON t.transaction_id = rs.transaction_id
+			WHERE t.portfolio_id = NEW."portfolio_id" AND t.ticker = NEW."ticker"
+			GROUP BY t.ticker;
+
+			IF v_remaining_shares < NEW."shares" THEN
+				RAISE EXCEPTION 'You have % shares of % in your portfolio!', v_remaining_shares, NEW."ticker";
+			END IF;
+
+			v_shares := NEW."shares";	
+			WHILE v_shares > 0 LOOP
+				SELECT rs.shares, rs.transaction_id INTO v_remaining_shares, v_transaction_id
+				FROM transactions t
+				JOIN remaining_shares rs ON t.transaction_id = rs.transaction_id
+				WHERE t.portfolio_id = NEW."portfolio_id" AND t.ticker = NEW."ticker" AND rs.shares > 0
+				ORDER BY t."date" ASC, t.transaction_id ASC
+				LIMIT 1;
+
+				IF v_remaining_shares > v_shares THEN
+					UPDATE remaining_shares SET shares = (shares - v_shares) WHERE transaction_id = v_transaction_id;
+					v_shares := 0;
+				ELSE
+					UPDATE remaining_shares SET shares = 0 WHERE transaction_id = v_transaction_id;
+					v_shares := v_shares - v_remaining_shares;
+				END IF;
+			END LOOP;
+		END IF;
+		RETURN NEW;
+	END;
+$$;
+
+
 SET default_with_oids = false;
 
 --
@@ -216,6 +266,16 @@ CREATE TABLE quotes (
     close real,
     volume bigint,
     openint bigint
+);
+
+
+--
+-- Name: remaining_shares; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE remaining_shares (
+    transaction_id integer NOT NULL,
+    shares real NOT NULL
 );
 
 
@@ -397,6 +457,14 @@ ALTER TABLE ONLY quotes
 
 
 --
+-- Name: remaining_shares_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY remaining_shares
+    ADD CONSTRAINT remaining_shares_pkey PRIMARY KEY (transaction_id);
+
+
+--
 -- Name: transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -419,11 +487,26 @@ CREATE TRIGGER quotes_before_insert_trigger BEFORE INSERT ON quotes FOR EACH ROW
 
 
 --
+-- Name: transactions_after_insert_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER transactions_after_insert_trigger AFTER INSERT ON transactions FOR EACH ROW EXECUTE PROCEDURE transactions_after_insert();
+
+
+--
 -- Name: operations_portfolio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY operations
     ADD CONSTRAINT operations_portfolio_id_fkey FOREIGN KEY (portfolio_id) REFERENCES portfolios(portfolio_id);
+
+
+--
+-- Name: remaining_shares_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY remaining_shares
+    ADD CONSTRAINT remaining_shares_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
