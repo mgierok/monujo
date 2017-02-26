@@ -134,10 +134,10 @@ SET default_with_oids = false;
 CREATE TABLE latest_quotes (
     ticker character(8) NOT NULL,
     date date NOT NULL,
-    open real,
-    high real,
-    low real,
-    close real,
+    open double precision,
+    high double precision,
+    low double precision,
+    close double precision,
     volume bigint,
     openint bigint
 );
@@ -195,12 +195,12 @@ CREATE TABLE transactions (
     portfolio_id integer NOT NULL,
     date date NOT NULL,
     ticker character(8) NOT NULL,
-    price real NOT NULL,
+    price double precision NOT NULL,
     type transaction_operation_type NOT NULL,
     currency currency NOT NULL,
-    shares real NOT NULL,
-    commision real NOT NULL,
-    exchange_rate real NOT NULL,
+    shares double precision NOT NULL,
+    commision double precision NOT NULL,
+    exchange_rate double precision NOT NULL,
     CONSTRAINT transactions_commision_check CHECK ((commision >= (0)::double precision)),
     CONSTRAINT transactions_exchange_rate_check CHECK ((exchange_rate > (0)::double precision)),
     CONSTRAINT transactions_price_check CHECK ((price > (0)::double precision)),
@@ -260,10 +260,10 @@ ALTER SEQUENCE portfolios_portfolio_id_seq OWNED BY portfolios.portfolio_id;
 CREATE TABLE quotes (
     ticker character(8) NOT NULL,
     date date NOT NULL,
-    open real,
-    high real,
-    low real,
-    close real,
+    open double precision,
+    high double precision,
+    low double precision,
+    close double precision,
     volume bigint,
     openint bigint
 );
@@ -275,7 +275,7 @@ CREATE TABLE quotes (
 
 CREATE TABLE remaining_shares (
     transaction_id integer NOT NULL,
-    shares real NOT NULL
+    shares double precision NOT NULL
 );
 
 
@@ -289,26 +289,26 @@ CREATE VIEW shares AS
     sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE (t.shares)::double precision
+            ELSE t.shares
         END) AS shares,
     q.close AS last_price,
     round(((sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE (t.shares)::double precision
+            ELSE t.shares
         END) * q.close))::numeric, 2) AS market_value,
     t.currency,
         CASE
-            WHEN (t.currency = p.currency) THEN (1)::real
+            WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
             ELSE e.close
         END AS exchange_rate,
     round((((sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE (t.shares)::double precision
+            ELSE t.shares
         END) * q.close) *
         CASE
-            WHEN (t.currency = p.currency) THEN (1)::real
+            WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
             ELSE e.close
         END))::numeric) AS market_value_base_currency,
     round(((sum(((t.shares * t.price) * (
@@ -318,12 +318,12 @@ CREATE VIEW shares AS
         END)::double precision)) / sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE (t.shares)::double precision
+            ELSE t.shares
         END)))::numeric, 2) AS average_price,
     round((((sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE (t.shares)::double precision
+            ELSE t.shares
         END) * q.close) - sum(((t.shares * t.price) * (
         CASE
             WHEN (t.type = 'buy'::transaction_operation_type) THEN 1
@@ -332,7 +332,7 @@ CREATE VIEW shares AS
     round((((((sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE (t.shares)::double precision
+            ELSE t.shares
         END) * q.close) - sum(((t.shares * t.price) * (
         CASE
             WHEN (t.type = 'buy'::transaction_operation_type) THEN 1
@@ -345,10 +345,10 @@ CREATE VIEW shares AS
     round(((((sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE (t.shares)::double precision
+            ELSE t.shares
         END) * q.close) *
         CASE
-            WHEN (t.currency = p.currency) THEN (1)::real
+            WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
             ELSE e.close
         END) - sum((((t.shares * t.price) * t.exchange_rate) * (
         CASE
@@ -358,10 +358,10 @@ CREATE VIEW shares AS
     round(((((((sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE (t.shares)::double precision
+            ELSE t.shares
         END) * q.close) *
         CASE
-            WHEN (t.currency = p.currency) THEN (1)::real
+            WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
             ELSE e.close
         END) - sum((((t.shares * t.price) * t.exchange_rate) * (
         CASE
@@ -380,7 +380,7 @@ CREATE VIEW shares AS
  HAVING (sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
-            ELSE (t.shares)::double precision
+            ELSE t.shares
         END) > (0)::double precision);
 
 
