@@ -134,10 +134,10 @@ SET default_with_oids = false;
 CREATE TABLE latest_quotes (
     ticker character(8) NOT NULL,
     date date NOT NULL,
-    open double precision,
-    high double precision,
-    low double precision,
-    close double precision,
+    open numeric,
+    high numeric,
+    low numeric,
+    close numeric,
     volume bigint,
     openint bigint
 );
@@ -152,7 +152,7 @@ CREATE TABLE operations (
     portfolio_id integer NOT NULL,
     date date NOT NULL,
     type financing_operation NOT NULL,
-    value real
+    value numeric
 );
 
 
@@ -195,16 +195,16 @@ CREATE TABLE transactions (
     portfolio_id integer NOT NULL,
     date date NOT NULL,
     ticker character(8) NOT NULL,
-    price double precision NOT NULL,
+    price numeric NOT NULL,
     type transaction_operation_type NOT NULL,
     currency currency NOT NULL,
-    shares double precision NOT NULL,
-    commision double precision NOT NULL,
-    exchange_rate double precision NOT NULL,
-    CONSTRAINT transactions_commision_check CHECK ((commision >= (0)::double precision)),
-    CONSTRAINT transactions_exchange_rate_check CHECK ((exchange_rate > (0)::double precision)),
-    CONSTRAINT transactions_price_check CHECK ((price > (0)::double precision)),
-    CONSTRAINT transactions_shares_check CHECK ((shares > (0)::double precision))
+    shares numeric NOT NULL,
+    commision numeric NOT NULL,
+    exchange_rate numeric NOT NULL,
+    CONSTRAINT transactions_commision_check CHECK (((commision)::double precision >= (0)::double precision)),
+    CONSTRAINT transactions_exchange_rate_check CHECK (((exchange_rate)::double precision > (0)::double precision)),
+    CONSTRAINT transactions_price_check CHECK (((price)::double precision > (0)::double precision)),
+    CONSTRAINT transactions_shares_check CHECK (((shares)::double precision > (0)::double precision))
 );
 
 
@@ -216,11 +216,11 @@ CREATE VIEW portfolio_summary AS
  SELECT p.portfolio_id,
     p.name,
     p.currency,
-    round(((sum((o.value * (
+    round((sum((o.value * (
         CASE
             WHEN (o.type = 'withdraw'::financing_operation) THEN (-1)
             ELSE 1
-        END)::double precision)) - t.invested_value))::numeric, 2) AS cache_value
+        END)::numeric)) - t.invested_value), 2) AS cache_value
    FROM ((portfolios p
      LEFT JOIN operations o ON ((o.portfolio_id = p.portfolio_id)))
      LEFT JOIN ( SELECT t_1.portfolio_id,
@@ -228,7 +228,7 @@ CREATE VIEW portfolio_summary AS
                 CASE
                     WHEN (t_1.type = 'buy'::transaction_operation_type) THEN 1
                     ELSE (-1)
-                END)::double precision))) AS invested_value
+                END)::numeric))) AS invested_value
            FROM transactions t_1
           GROUP BY t_1.portfolio_id) t ON ((t.portfolio_id = o.portfolio_id)))
   GROUP BY p.portfolio_id, p.name, p.currency, t.invested_value;
@@ -260,10 +260,10 @@ ALTER SEQUENCE portfolios_portfolio_id_seq OWNED BY portfolios.portfolio_id;
 CREATE TABLE quotes (
     ticker character(8) NOT NULL,
     date date NOT NULL,
-    open double precision,
-    high double precision,
-    low double precision,
-    close double precision,
+    open numeric,
+    high numeric,
+    low numeric,
+    close numeric,
     volume bigint,
     openint bigint
 );
@@ -275,7 +275,7 @@ CREATE TABLE quotes (
 
 CREATE TABLE remaining_shares (
     transaction_id integer NOT NULL,
-    shares double precision NOT NULL
+    shares numeric NOT NULL
 );
 
 
@@ -288,30 +288,30 @@ CREATE VIEW shares AS
     t.ticker,
     sum(rs.shares) AS shares,
     q.close AS last_price,
-    round(((sum(rs.shares) * q.close))::numeric, 2) AS market_value,
+    round((sum(rs.shares) * q.close), 2) AS market_value,
     t.currency,
         CASE
-            WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
+            WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
             ELSE e.close
         END AS exchange_rate,
+    round(((sum(rs.shares) * q.close) *
+        CASE
+            WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
+            ELSE e.close
+        END)) AS market_value_base_currency,
+    round((sum((rs.shares * t.price)) / sum(rs.shares)), 2) AS average_price,
+    round(((sum(rs.shares) * q.close) - sum((rs.shares * t.price))), 2) AS gain,
+    round(((((sum(rs.shares) * q.close) - sum((rs.shares * t.price))) / sum((rs.shares * t.price))) * (100)::numeric), 2) AS percentage_gain,
     round((((sum(rs.shares) * q.close) *
         CASE
-            WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
+            WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
             ELSE e.close
-        END))::numeric) AS market_value_base_currency,
-    round(((sum((rs.shares * t.price)) / sum(rs.shares)))::numeric, 2) AS average_price,
-    round((((sum(rs.shares) * q.close) - sum((rs.shares * t.price))))::numeric, 2) AS gain,
-    round((((((sum(rs.shares) * q.close) - sum((rs.shares * t.price))) / sum((rs.shares * t.price))) * (100)::double precision))::numeric, 2) AS percentage_gain,
-    round(((((sum(rs.shares) * q.close) *
+        END) - sum(((rs.shares * t.price) * t.exchange_rate))), 2) AS gain_base_currency,
+    round((((((sum(rs.shares) * q.close) *
         CASE
-            WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
+            WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
             ELSE e.close
-        END) - sum(((rs.shares * t.price) * t.exchange_rate))))::numeric, 2) AS gain_base_currency,
-    round(((((((sum(rs.shares) * q.close) *
-        CASE
-            WHEN (t.currency = p.currency) THEN ((1)::real)::double precision
-            ELSE e.close
-        END) - sum(((rs.shares * t.price) * t.exchange_rate))) / sum(((rs.shares * t.price) * t.exchange_rate))) * (100)::double precision))::numeric, 2) AS percentage_gain_base_currency
+        END) - sum(((rs.shares * t.price) * t.exchange_rate))) / sum(((rs.shares * t.price) * t.exchange_rate))) * (100)::numeric), 2) AS percentage_gain_base_currency
    FROM ((((transactions t
      JOIN portfolios p ON ((t.portfolio_id = p.portfolio_id)))
      LEFT JOIN latest_quotes q ON ((t.ticker = q.ticker)))
@@ -320,9 +320,9 @@ CREATE VIEW shares AS
   GROUP BY t.portfolio_id, t.ticker, q.close, t.currency, e.close, p.currency
  HAVING (sum(
         CASE
-            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::double precision)
+            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::numeric)
             ELSE t.shares
-        END) > (0)::double precision);
+        END) > (0)::numeric);
 
 
 --
