@@ -88,34 +88,39 @@ DECLARE
 	v_transaction_id remaining_shares.transaction_id%TYPE;
 	
 	BEGIN
-		IF NEW."type" = 'buy'::transaction_operation_type THEN
-			INSERT INTO remaining_shares ("transaction_id", "shares") VALUES (NEW."transaction_id", NEW."shares");
-		ELSIF NEW."type" = 'sell'::transaction_operation_type THEN
+		IF NEW."type" = 'sell'::transaction_operation_type THEN
 
-			SELECT SUM(rs.shares) INTO v_remaining_shares
+			SELECT SUM(t.shares) - SUM(COALESCE(d.disposed_shares, 0))  INTO v_remaining_shares
 			FROM transactions t
-			JOIN remaining_shares rs ON t.transaction_id = rs.transaction_id
-			WHERE t.portfolio_id = NEW."portfolio_id" AND t.ticker = NEW."ticker"
-			GROUP BY t.ticker;
+			LEFT JOIN (SELECT buy_transaction_id, SUM(disposed_shares) disposed_shares FROM disposals GROUP BY buy_transaction_id) d ON d.buy_transaction_id = t.transaction_id
+			WHERE t.portfolio_id = NEW."portfolio_id" AND t.ticker = NEW."ticker" AND t.type = 'buy'::transaction_operation_type 
+			GROUP BY t.ticker
+			HAVING (SUM(t.shares) - SUM(COALESCE(d.disposed_shares, 0))) > 0;
+
+			IF NOT FOUND THEN
+				RAISE EXCEPTION 'You have no shares of % in your portfolio!', NEW."ticker";
+			END IF;
 
 			IF v_remaining_shares < NEW."shares" THEN
-				RAISE EXCEPTION 'You have % shares of % in your portfolio!', v_remaining_shares, NEW."ticker";
+				RAISE EXCEPTION 'You have only % shares of % in your portfolio!', v_remaining_shares, NEW."ticker";
 			END IF;
 
 			v_shares := NEW."shares";	
 			WHILE v_shares > 0 LOOP
-				SELECT rs.shares, rs.transaction_id INTO v_remaining_shares, v_transaction_id
+				SELECT t.shares - SUM(COALESCE(d.disposed_shares, 0)), t.transaction_id INTO v_remaining_shares, v_transaction_id
 				FROM transactions t
-				JOIN remaining_shares rs ON t.transaction_id = rs.transaction_id
-				WHERE t.portfolio_id = NEW."portfolio_id" AND t.ticker = NEW."ticker" AND rs.shares > 0
+				LEFT JOIN disposals d ON t.transaction_id = d.buy_transaction_id
+				WHERE t.portfolio_id = NEW."portfolio_id" AND t.ticker = NEW."ticker" AND t.type = 'buy'::transaction_operation_type
+				GROUP BY t.transaction_id, t.shares, t."date"
+				HAVING (t.shares - SUM(COALESCE(d.disposed_shares, 0))) > 0
 				ORDER BY t."date" ASC, t.transaction_id ASC
 				LIMIT 1;
 
-				IF v_remaining_shares > v_shares THEN
-					UPDATE remaining_shares SET shares = (shares - v_shares) WHERE transaction_id = v_transaction_id;
+				IF v_remaining_shares >= v_shares THEN
+					INSERT INTO disposals (buy_transaction_id, sell_transaction_id, disposed_shares) VALUES (v_transaction_id, NEW."transaction_id", v_shares);
 					v_shares := 0;
 				ELSE
-					UPDATE remaining_shares SET shares = 0 WHERE transaction_id = v_transaction_id;
+					INSERT INTO disposals (buy_transaction_id, sell_transaction_id, disposed_shares) VALUES (v_transaction_id, NEW."transaction_id", v_remaining_shares);
 					v_shares := v_shares - v_remaining_shares;
 				END IF;
 			END LOOP;
@@ -126,6 +131,17 @@ $$;
 
 
 SET default_with_oids = false;
+
+--
+-- Name: disposals; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE disposals (
+    buy_transaction_id integer NOT NULL,
+    sell_transaction_id integer NOT NULL,
+    disposed_shares numeric NOT NULL
+);
+
 
 --
 -- Name: latest_quotes; Type: TABLE; Schema: public; Owner: -
@@ -270,13 +286,16 @@ CREATE TABLE quotes (
 
 
 --
--- Name: remaining_shares; Type: TABLE; Schema: public; Owner: -
+-- Name: remaining_shares; Type: VIEW; Schema: public; Owner: -
 --
 
-CREATE TABLE remaining_shares (
-    transaction_id integer NOT NULL,
-    shares numeric NOT NULL
-);
+CREATE VIEW remaining_shares AS
+ SELECT t.transaction_id,
+    (t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) AS shares
+   FROM (transactions t
+     LEFT JOIN disposals d ON ((t.transaction_id = d.buy_transaction_id)))
+  WHERE (t.type = 'buy'::transaction_operation_type)
+  GROUP BY t.transaction_id, t.shares;
 
 
 --
@@ -366,6 +385,14 @@ ALTER TABLE ONLY transactions ALTER COLUMN transaction_id SET DEFAULT nextval('t
 
 
 --
+-- Name: disposals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY disposals
+    ADD CONSTRAINT disposals_pkey PRIMARY KEY (buy_transaction_id, sell_transaction_id);
+
+
+--
 -- Name: latest_quotes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -398,14 +425,6 @@ ALTER TABLE ONLY quotes
 
 
 --
--- Name: remaining_shares_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY remaining_shares
-    ADD CONSTRAINT remaining_shares_pkey PRIMARY KEY (transaction_id);
-
-
---
 -- Name: transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -435,19 +454,27 @@ CREATE TRIGGER transactions_after_insert_trigger AFTER INSERT ON transactions FO
 
 
 --
+-- Name: disposals_buy_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY disposals
+    ADD CONSTRAINT disposals_buy_transaction_id_fkey FOREIGN KEY (buy_transaction_id) REFERENCES transactions(transaction_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: disposals_sell_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY disposals
+    ADD CONSTRAINT disposals_sell_transaction_id_fkey FOREIGN KEY (sell_transaction_id) REFERENCES transactions(transaction_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: operations_portfolio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY operations
     ADD CONSTRAINT operations_portfolio_id_fkey FOREIGN KEY (portfolio_id) REFERENCES portfolios(portfolio_id);
-
-
---
--- Name: remaining_shares_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY remaining_shares
-    ADD CONSTRAINT remaining_shares_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
