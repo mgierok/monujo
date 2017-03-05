@@ -434,6 +434,13 @@ ALTER TABLE ONLY transactions
 
 
 --
+-- Name: disposals_sell_transaction_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX disposals_sell_transaction_id_idx ON disposals USING btree (sell_transaction_id);
+
+
+--
 -- Name: latest_quotes_before_insert_trigger; Type: TRIGGER; Schema: public; Owner: -
 --
 
