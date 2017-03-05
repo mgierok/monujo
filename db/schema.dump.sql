@@ -225,67 +225,6 @@ CREATE TABLE transactions (
 
 
 --
--- Name: portfolio_summary; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW portfolio_summary AS
- SELECT p.portfolio_id,
-    p.name,
-    p.currency,
-    round((sum((o.value * (
-        CASE
-            WHEN (o.type = 'withdraw'::financing_operation) THEN (-1)
-            ELSE 1
-        END)::numeric)) - t.invested_value), 2) AS cache_value
-   FROM ((portfolios p
-     LEFT JOIN operations o ON ((o.portfolio_id = p.portfolio_id)))
-     LEFT JOIN ( SELECT t_1.portfolio_id,
-            sum((t_1.commision + (((t_1.shares * t_1.price) * t_1.exchange_rate) * (
-                CASE
-                    WHEN (t_1.type = 'buy'::transaction_operation_type) THEN 1
-                    ELSE (-1)
-                END)::numeric))) AS invested_value
-           FROM transactions t_1
-          GROUP BY t_1.portfolio_id) t ON ((t.portfolio_id = o.portfolio_id)))
-  GROUP BY p.portfolio_id, p.name, p.currency, t.invested_value;
-
-
---
--- Name: portfolios_portfolio_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE portfolios_portfolio_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: portfolios_portfolio_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE portfolios_portfolio_id_seq OWNED BY portfolios.portfolio_id;
-
-
---
--- Name: quotes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE quotes (
-    ticker character(8) NOT NULL,
-    date date NOT NULL,
-    open numeric,
-    high numeric,
-    low numeric,
-    close numeric,
-    volume bigint,
-    openint bigint
-);
-
-
---
 -- Name: remaining_shares; Type: VIEW; Schema: public; Owner: -
 --
 
@@ -343,6 +282,91 @@ CREATE VIEW shares AS
             ELSE t.shares
         END) > (0)::numeric)
   ORDER BY t.portfolio_id;
+
+
+--
+-- Name: portfolio_summary; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW portfolio_summary AS
+ SELECT p.portfolio_id,
+    p.name,
+    p.currency,
+    (fo.cache_value - t.invested_value) AS cache_value,
+    "out".outgoings,
+    "in".incomings,
+    ("in".incomings - "out".outgoings) AS gain_of_sold_shares,
+    ("in".commision + "out".commision) AS commision,
+    os.gain_of_owned_shares
+   FROM (((((portfolios p
+     LEFT JOIN ( SELECT o.portfolio_id,
+            round(sum((o.value * (
+                CASE
+                    WHEN (o.type = 'withdraw'::financing_operation) THEN (-1)
+                    ELSE 1
+                END)::numeric)), 2) AS cache_value
+           FROM operations o
+          GROUP BY o.portfolio_id) fo ON ((fo.portfolio_id = p.portfolio_id)))
+     LEFT JOIN ( SELECT t_1.portfolio_id,
+            round(sum((t_1.commision + (((t_1.shares * t_1.price) * t_1.exchange_rate) * (
+                CASE
+                    WHEN (t_1.type = 'buy'::transaction_operation_type) THEN 1
+                    ELSE (-1)
+                END)::numeric))), 2) AS invested_value
+           FROM transactions t_1
+          GROUP BY t_1.portfolio_id) t ON ((t.portfolio_id = p.portfolio_id)))
+     LEFT JOIN ( SELECT t_1.portfolio_id,
+            round(sum((((t_1.shares - rs.shares) * t_1.price) * t_1.exchange_rate)), 2) AS outgoings,
+            sum(t_1.commision) AS commision
+           FROM (transactions t_1
+             LEFT JOIN remaining_shares rs ON ((t_1.transaction_id = rs.transaction_id)))
+          WHERE ((t_1.shares - rs.shares) > (0)::numeric)
+          GROUP BY t_1.portfolio_id) "out" ON (("out".portfolio_id = p.portfolio_id)))
+     LEFT JOIN ( SELECT t_1.portfolio_id,
+            round(sum(((t_1.shares * t_1.price) * t_1.exchange_rate)), 2) AS incomings,
+            sum(t_1.commision) AS commision
+           FROM transactions t_1
+          WHERE (t_1.type = 'sell'::transaction_operation_type)
+          GROUP BY t_1.portfolio_id) "in" ON (("in".portfolio_id = p.portfolio_id)))
+     LEFT JOIN ( SELECT s.portfolio_id,
+            sum(s.gain_base_currency) AS gain_of_owned_shares
+           FROM shares s
+          GROUP BY s.portfolio_id) os ON ((os.portfolio_id = p.portfolio_id)));
+
+
+--
+-- Name: portfolios_portfolio_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE portfolios_portfolio_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: portfolios_portfolio_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE portfolios_portfolio_id_seq OWNED BY portfolios.portfolio_id;
+
+
+--
+-- Name: quotes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE quotes (
+    ticker character(8) NOT NULL,
+    date date NOT NULL,
+    open numeric,
+    high numeric,
+    low numeric,
+    close numeric,
+    volume bigint,
+    openint bigint
+);
 
 
 --
