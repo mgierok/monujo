@@ -210,7 +210,7 @@ CREATE TABLE transactions (
     transaction_id integer NOT NULL,
     portfolio_id integer NOT NULL,
     date date NOT NULL,
-    ticker character(8) NOT NULL,
+    ticker character(12) NOT NULL,
     price numeric NOT NULL,
     type transaction_operation_type NOT NULL,
     currency currency NOT NULL,
