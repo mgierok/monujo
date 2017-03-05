@@ -341,7 +341,8 @@ CREATE VIEW shares AS
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::numeric)
             ELSE t.shares
-        END) > (0)::numeric);
+        END) > (0)::numeric)
+  ORDER BY t.portfolio_id;
 
 
 --
