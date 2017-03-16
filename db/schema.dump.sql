@@ -217,6 +217,7 @@ CREATE TABLE transactions (
     shares numeric NOT NULL,
     commision numeric NOT NULL,
     exchange_rate numeric NOT NULL,
+    tax numeric DEFAULT 0 NOT NULL,
     CONSTRAINT transactions_commision_check CHECK (((commision)::double precision >= (0)::double precision)),
     CONSTRAINT transactions_exchange_rate_check CHECK (((exchange_rate)::double precision > (0)::double precision)),
     CONSTRAINT transactions_price_check CHECK (((price)::double precision > (0)::double precision)),
