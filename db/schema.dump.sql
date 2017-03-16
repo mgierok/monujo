@@ -239,12 +239,27 @@ CREATE VIEW remaining_shares AS
 
 
 --
+-- Name: securities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE securities (
+    ticker character(12) NOT NULL,
+    short_name character varying(128) NOT NULL,
+    full_name character varying(128) NOT NULL,
+    market character varying(8) NOT NULL
+);
+
+
+--
 -- Name: shares; Type: VIEW; Schema: public; Owner: -
 --
 
 CREATE VIEW shares AS
  SELECT t.portfolio_id,
     t.ticker,
+    s.short_name,
+    s.full_name,
+    s.market,
     sum(rs.shares) AS shares,
     q.close AS last_price,
     round((sum(rs.shares) * q.close), 2) AS market_value,
@@ -271,12 +286,13 @@ CREATE VIEW shares AS
             WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
             ELSE e.close
         END) - sum(((rs.shares * t.price) * t.exchange_rate))) / sum(((rs.shares * t.price) * t.exchange_rate))) * (100)::numeric), 2) AS percentage_gain_base_currency
-   FROM ((((transactions t
+   FROM (((((transactions t
      JOIN portfolios p ON ((t.portfolio_id = p.portfolio_id)))
+     LEFT JOIN securities s ON ((t.ticker = s.ticker)))
      LEFT JOIN latest_quotes q ON ((t.ticker = q.ticker)))
      LEFT JOIN latest_quotes e ON ((((e.ticker)::text = ((t.currency)::text || (p.currency)::text)) AND (t.currency <> p.currency))))
      LEFT JOIN remaining_shares rs ON ((rs.transaction_id = t.transaction_id)))
-  GROUP BY t.portfolio_id, t.ticker, q.close, t.currency, e.close, p.currency
+  GROUP BY t.portfolio_id, t.ticker, s.short_name, s.full_name, s.market, q.close, t.currency, e.close, p.currency
  HAVING (sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::numeric)
@@ -448,6 +464,14 @@ ALTER TABLE ONLY portfolios
 
 ALTER TABLE ONLY quotes
     ADD CONSTRAINT quotes_pkey PRIMARY KEY (ticker, date);
+
+
+--
+-- Name: securities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY securities
+    ADD CONSTRAINT securities_pkey PRIMARY KEY (ticker);
 
 
 --
