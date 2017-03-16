@@ -315,6 +315,7 @@ CREATE VIEW portfolio_summary AS
     "in".incomings,
     ("in".incomings - "out".outgoings) AS gain_of_sold_shares,
     ("in".commision + "out".commision) AS commision,
+    ("in".tax + "out".tax) AS tax,
     os.gain_of_owned_shares
    FROM (((((portfolios p
      LEFT JOIN ( SELECT o.portfolio_id,
@@ -335,14 +336,16 @@ CREATE VIEW portfolio_summary AS
           GROUP BY t_1.portfolio_id) t ON ((t.portfolio_id = p.portfolio_id)))
      LEFT JOIN ( SELECT t_1.portfolio_id,
             round(sum((((t_1.shares - rs.shares) * t_1.price) * t_1.exchange_rate)), 2) AS outgoings,
-            sum(t_1.commision) AS commision
+            sum(t_1.commision) AS commision,
+            sum(t_1.tax) AS tax
            FROM (transactions t_1
              LEFT JOIN remaining_shares rs ON ((t_1.transaction_id = rs.transaction_id)))
           WHERE ((t_1.shares - rs.shares) > (0)::numeric)
           GROUP BY t_1.portfolio_id) "out" ON (("out".portfolio_id = p.portfolio_id)))
      LEFT JOIN ( SELECT t_1.portfolio_id,
             round(sum(((t_1.shares * t_1.price) * t_1.exchange_rate)), 2) AS incomings,
-            sum(t_1.commision) AS commision
+            sum(t_1.commision) AS commision,
+            sum(t_1.tax) AS tax
            FROM transactions t_1
           WHERE (t_1.type = 'sell'::transaction_operation_type)
           GROUP BY t_1.portfolio_id) "in" ON (("in".portfolio_id = p.portfolio_id)))
