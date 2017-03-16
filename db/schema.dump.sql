@@ -256,6 +256,7 @@ CREATE TABLE securities (
 
 CREATE VIEW shares AS
  SELECT t.portfolio_id,
+    p.name AS portfolio_name,
     t.ticker,
     s.short_name,
     s.full_name,
@@ -292,7 +293,7 @@ CREATE VIEW shares AS
      LEFT JOIN latest_quotes q ON ((t.ticker = q.ticker)))
      LEFT JOIN latest_quotes e ON ((((e.ticker)::text = ((t.currency)::text || (p.currency)::text)) AND (t.currency <> p.currency))))
      LEFT JOIN remaining_shares rs ON ((rs.transaction_id = t.transaction_id)))
-  GROUP BY t.portfolio_id, t.ticker, s.short_name, s.full_name, s.market, q.close, t.currency, e.close, p.currency
+  GROUP BY t.portfolio_id, p.name, t.ticker, s.short_name, s.full_name, s.market, q.close, t.currency, e.close, p.currency
  HAVING (sum(
         CASE
             WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::numeric)
