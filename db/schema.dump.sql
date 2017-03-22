@@ -130,6 +130,17 @@ DECLARE
 $$;
 
 
+--
+-- Name: currencies; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW currencies AS
+ SELECT e.enumlabel AS currency
+   FROM (pg_type t
+     JOIN pg_enum e ON ((t.oid = e.enumtypid)))
+  WHERE (t.typname = 'currency'::name);
+
+
 SET default_with_oids = false;
 
 --
@@ -388,6 +399,17 @@ CREATE TABLE quotes (
     volume bigint,
     openint bigint
 );
+
+
+--
+-- Name: transaction_operation_types; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW transaction_operation_types AS
+ SELECT e.enumlabel AS transaction_operation_type
+   FROM (pg_type t
+     JOIN pg_enum e ON ((t.oid = e.enumtypid)))
+  WHERE (t.typname = 'transaction_operation_type'::name);
 
 
 --
