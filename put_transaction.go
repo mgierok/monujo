@@ -3,37 +3,18 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/chrisftw/ezconf"
 	_ "github.com/lib/pq"
 	"github.com/olekukonko/tablewriter"
 )
 
-func main() {
-	dbinfo := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s sslmode=disable",
-		ezconf.Get("db", "host"),
-		ezconf.Get("db", "user"),
-		ezconf.Get("db", "password"),
-		ezconf.Get("db", "dbname"),
-	)
-	db, err := sql.Open("postgres", dbinfo)
-
-	if err != nil {
-		log.Fatal("Error: The data source arguments are not valid")
-	}
-
+func PutTransaction() {
+	db := GetDb()
 	defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		log.Fatal("Error: Could not establish a connection with the database")
-	}
 
 	portfolioId := choosePortfolio(db)
 	date := provideDateOfTransaction()
@@ -64,9 +45,9 @@ func main() {
 	table.Render()
 
 	var transactionId int
-	err = db.QueryRow(`INSERT INTO transactions(portfolio_id, date, ticker, price, type, currency, shares, commision, exchange_rate, tax)
+	err := db.QueryRow(`INSERT INTO transactions(portfolio_id, date, ticker, price, type, currency, shares, commision, exchange_rate, tax)
 		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING transaction_id`, portfolioId, date, ticker, price, typeOfTransaction, currency, numberOfShares, commision, exchangeRate, tax).Scan(&transactionId)
-	logError(err)
+	LogError(err)
 
 	fmt.Printf("Transaction has been recorded with an ID: %d", transactionId)
 }
@@ -76,7 +57,7 @@ func choosePortfolio(db *sql.DB) int64 {
 	fmt.Println("")
 
 	rows, err := db.Query("SELECT portfolio_id, name FROM portfolios ORDER BY portfolio_id ASC")
-	logError(err)
+	LogError(err)
 
 	var portfolios = make(map[int64]string)
 
@@ -87,7 +68,7 @@ func choosePortfolio(db *sql.DB) int64 {
 			&portfolioId,
 			&portfolioName,
 		)
-		logError(err)
+		LogError(err)
 
 		portfolios[portfolioId.Int64] = portfolioName.String
 	}
@@ -125,7 +106,7 @@ func chooseTypeOfTransaction(db *sql.DB) string {
 	fmt.Println("")
 
 	rows, err := db.Query("SELECT transaction_operation_type FROM transaction_operation_types ORDER BY transaction_operation_type ASC")
-	logError(err)
+	LogError(err)
 
 	var typeOfTransactions = make(map[string]string)
 
@@ -135,7 +116,7 @@ func chooseTypeOfTransaction(db *sql.DB) string {
 		err = rows.Scan(
 			&typeOfTransaction,
 		)
-		logError(err)
+		LogError(err)
 
 		typeOfTransactions[typeOfTransaction] = typeOfTransaction
 	}
@@ -293,7 +274,7 @@ func chooseCurrency(db *sql.DB) string {
 	fmt.Println("")
 
 	rows, err := db.Query("SELECT currency FROM currencies ORDER BY currency ASC")
-	logError(err)
+	LogError(err)
 
 	var currencies = make(map[string]string)
 
@@ -303,7 +284,7 @@ func chooseCurrency(db *sql.DB) string {
 		err = rows.Scan(
 			&currency,
 		)
-		logError(err)
+		LogError(err)
 
 		currencies[currency] = currency
 	}
@@ -334,11 +315,5 @@ func chooseCurrency(db *sql.DB) string {
 	} else {
 		fmt.Printf("\n%s is not a valid currency\n\n", currency)
 		return chooseCurrency(db)
-	}
-}
-
-func logError(err error) {
-	if err != nil {
-		log.Fatal(err)
 	}
 }

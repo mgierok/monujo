@@ -3,38 +3,19 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
-	"github.com/chrisftw/ezconf"
 	_ "github.com/lib/pq"
 	"github.com/olekukonko/tablewriter"
 )
 
-func main() {
-	dbinfo := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s sslmode=disable",
-		ezconf.Get("db", "host"),
-		ezconf.Get("db", "user"),
-		ezconf.Get("db", "password"),
-		ezconf.Get("db", "dbname"),
-	)
-	db, err := sql.Open("postgres", dbinfo)
-
-	if err != nil {
-		log.Fatal("Error: The data source arguments are not valid")
-	}
-
+func Summary() {
+	db := GetDb()
 	defer db.Close()
 
-	err = db.Ping()
-	if err != nil {
-		log.Fatal("Error: Could not establish a connection with the database")
-	}
-
 	rows, err := db.Query("SELECT portfolio_id, portfolio_name, ticker, short_name, shares, last_price, market_value, currency, exchange_rate, market_value_base_currency, average_price, gain, percentage_gain, gain_base_currency, percentage_gain_base_currency  FROM owned_shares_summary")
-	logError(err)
+	LogError(err)
 
 	var data [][]string
 
@@ -72,7 +53,7 @@ func main() {
 			&gainBaseCurrency,
 			&percentageGainBaseCurrency,
 		)
-		logError(err)
+		LogError(err)
 
 		data = append(data, []string{
 			portfolioId.String,
@@ -122,7 +103,7 @@ func main() {
 	fmt.Println("")
 
 	rows, err = db.Query("SELECT portfolio_id, name, currency, cache_value, outgoings, incomings, gain_of_sold_shares, commision, tax, gain_of_owned_shares FROM portfolios_summary")
-	logError(err)
+	LogError(err)
 
 	for rows.Next() {
 		var portfolioId sql.NullString
@@ -148,7 +129,7 @@ func main() {
 			&tax,
 			&gainOfOwnedShares,
 		)
-		logError(err)
+		LogError(err)
 
 		data = append(data, []string{
 			portfolioId.String,
@@ -182,10 +163,4 @@ func main() {
 	table.SetAutoMergeCells(true)
 	table.SetRowLine(true)
 	table.Render()
-}
-
-func logError(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
 }
