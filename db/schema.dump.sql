@@ -159,7 +159,7 @@ CREATE TABLE disposals (
 --
 
 CREATE TABLE latest_quotes (
-    ticker character(8) NOT NULL,
+    ticker character(12) NOT NULL,
     date date NOT NULL,
     open numeric,
     high numeric,
@@ -390,7 +390,7 @@ CREATE VIEW portfolios_summary AS
 --
 
 CREATE TABLE quotes (
-    ticker character(8) NOT NULL,
+    ticker character(12) NOT NULL,
     date date NOT NULL,
     open numeric,
     high numeric,
