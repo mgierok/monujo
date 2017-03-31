@@ -280,12 +280,18 @@ CREATE VIEW owned_shares_summary AS
             WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
             ELSE e.close
         END AS exchange_rate,
+    (q.close *
+        CASE
+            WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
+            ELSE e.close
+        END) AS last_price_base_currency,
     round(((sum(rs.shares) * q.close) *
         CASE
             WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
             ELSE e.close
         END)) AS market_value_base_currency,
     round((sum((rs.shares * t.price)) / sum(rs.shares)), 2) AS average_price,
+    round((sum(((rs.shares * t.price) * t.exchange_rate)) / sum(rs.shares)), 2) AS average_price_base_currency,
     round(((sum(rs.shares) * q.close) - sum((rs.shares * t.price))), 2) AS gain,
     round(((((sum(rs.shares) * q.close) - sum((rs.shares * t.price))) / sum((rs.shares * t.price))) * (100)::numeric), 2) AS percentage_gain,
     round((((sum(rs.shares) * q.close) *

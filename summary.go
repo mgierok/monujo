@@ -14,7 +14,7 @@ func Summary() {
 	db := GetDb()
 	defer db.Close()
 
-	rows, err := db.Query("SELECT portfolio_id, portfolio_name, ticker, short_name, shares, last_price, market_value, currency, exchange_rate, market_value_base_currency, average_price, gain, percentage_gain, gain_base_currency, percentage_gain_base_currency  FROM owned_shares_summary")
+	rows, err := db.Query("SELECT portfolio_id, portfolio_name, ticker, short_name, shares, last_price, market_value, currency, exchange_rate, last_price_base_currency, market_value_base_currency, average_price, average_price_base_currency, gain, percentage_gain, gain_base_currency, percentage_gain_base_currency  FROM owned_shares_summary")
 	LogError(err)
 
 	var data [][]string
@@ -29,8 +29,10 @@ func Summary() {
 		var marketValue sql.NullString
 		var currency sql.NullString
 		var exchangeRate sql.NullString
+		var lastPriceBaseCurrency sql.NullString
 		var marketValueBaseCurrency sql.NullString
 		var averagePrice sql.NullString
+		var averagePriceBaseCurrency sql.NullString
 		var gain sql.NullString
 		var percentageGain sql.NullString
 		var gainBaseCurrency sql.NullString
@@ -46,8 +48,10 @@ func Summary() {
 			&marketValue,
 			&currency,
 			&exchangeRate,
+			&lastPriceBaseCurrency,
 			&marketValueBaseCurrency,
 			&averagePrice,
+			&averagePriceBaseCurrency,
 			&gain,
 			&percentageGain,
 			&gainBaseCurrency,
@@ -65,8 +69,10 @@ func Summary() {
 			marketValue.String,
 			currency.String,
 			exchangeRate.String,
+			lastPriceBaseCurrency.String,
 			marketValueBaseCurrency.String,
 			averagePrice.String,
+			averagePriceBaseCurrency.String,
 			gain.String,
 			percentageGain.String,
 			gainBaseCurrency.String,
@@ -85,8 +91,10 @@ func Summary() {
 		"Market Value",
 		"Currency",
 		"Ex Rate",
+		"Last Price BC",
 		"MV BC",
 		"Average Price",
+		"Average Price BC",
 		"Gain",
 		"Gain%",
 		"Gain BC",
