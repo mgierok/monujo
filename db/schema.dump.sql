@@ -346,7 +346,9 @@ CREATE VIEW portfolios_summary AS
     ("in".incomings - "out".outgoings) AS gain_of_sold_shares,
     ("in".commision + "out".commision) AS commision,
     ("in".tax + "out".tax) AS tax,
-    os.gain_of_owned_shares
+    os.gain_of_owned_shares,
+    (COALESCE(("in".incomings - "out".outgoings), (0)::numeric) + COALESCE(os.gain_of_owned_shares, (0)::numeric)) AS estimated_gain,
+    (((COALESCE(("in".incomings - "out".outgoings), (0)::numeric) + COALESCE(os.gain_of_owned_shares, (0)::numeric)) - COALESCE(("in".tax + "out".tax), (0)::numeric)) - COALESCE(("in".commision + "out".commision), (0)::numeric)) AS estimated_gain_costs_inc
    FROM (((((portfolios p
      LEFT JOIN ( SELECT o.portfolio_id,
             round(sum((o.value * (

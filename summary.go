@@ -102,7 +102,7 @@ func Summary() {
 	fmt.Println("")
 	fmt.Println("")
 
-	rows, err = db.Query("SELECT portfolio_id, name, currency, cache_value, outgoings, incomings, gain_of_sold_shares, commision, tax, gain_of_owned_shares FROM portfolios_summary")
+	rows, err = db.Query("SELECT portfolio_id, name, currency, cache_value, outgoings, incomings, gain_of_sold_shares, commision, tax, gain_of_owned_shares, estimated_gain, estimated_gain_costs_inc FROM portfolios_summary")
 	LogError(err)
 
 	for rows.Next() {
@@ -116,6 +116,8 @@ func Summary() {
 		var commision sql.NullString
 		var tax sql.NullString
 		var gainOfOwnedShares sql.NullString
+		var estimatedGain sql.NullString
+		var estimatedGainCostsInc sql.NullString
 
 		err = rows.Scan(
 			&portfolioId,
@@ -128,6 +130,8 @@ func Summary() {
 			&commision,
 			&tax,
 			&gainOfOwnedShares,
+			&estimatedGain,
+			&estimatedGainCostsInc,
 		)
 		LogError(err)
 
@@ -142,6 +146,8 @@ func Summary() {
 			commision.String,
 			tax.String,
 			gainOfOwnedShares.String,
+			estimatedGain.String,
+			estimatedGainCostsInc.String,
 		})
 	}
 
@@ -157,6 +163,8 @@ func Summary() {
 		"Commision",
 		"Tax",
 		"Gain Of Ownded Shares",
+		"Estimated Gain",
+		"Estimated Gain Costs Inc.",
 	})
 
 	table.AppendBulk(data)
