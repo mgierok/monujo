@@ -59,45 +59,40 @@ func Summary() {
 		)
 		LogError(err)
 
+		var stock string
+		if shortName.String == "" {
+			stock = strings.Trim(ticker.String, " ")
+		} else {
+			stock = shortName.String
+		}
+
 		data = append(data, []string{
-			portfolioId.String,
 			portfolioName.String,
-			strings.Trim(ticker.String, " "),
-			shortName.String,
+			stock,
 			shares.String,
 			lastPrice.String,
-			marketValue.String,
-			currency.String,
-			exchangeRate.String,
-			lastPriceBaseCurrency.String,
-			marketValueBaseCurrency.String,
 			averagePrice.String,
+			lastPriceBaseCurrency.String,
 			averagePriceBaseCurrency.String,
 			gain.String,
-			percentageGain.String,
 			gainBaseCurrency.String,
+			percentageGain.String,
 			percentageGainBaseCurrency.String,
 		})
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{
-		"Portfolio Id",
 		"Portfolio Name",
-		"Ticker",
-		"Short Name",
+		"Stock",
 		"Shares",
 		"Last Price",
-		"Market Value",
-		"Currency",
-		"Ex Rate",
-		"Last Price BC",
-		"MV BC",
 		"Average Price",
+		"Last Price BC",
 		"Average Price BC",
 		"Gain",
-		"Gain%",
 		"Gain BC",
+		"Gain%",
 		"Gain BC%",
 	})
 
@@ -146,10 +141,7 @@ func Summary() {
 		data = append(data, []string{
 			portfolioId.String,
 			name.String,
-			currency.String,
 			cacheValue.String,
-			outgoings.String,
-			incomings.String,
 			gainOfSoldShares.String,
 			commision.String,
 			tax.String,
@@ -163,10 +155,7 @@ func Summary() {
 	table.SetHeader([]string{
 		"Portfolio Id",
 		"Portfolio Name",
-		"Currency",
 		"Cache Value",
-		"Outgoings",
-		"Incomings",
 		"Gain of Sold Shares",
 		"Commision",
 		"Tax",
