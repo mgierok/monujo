@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -18,16 +17,10 @@ func Summary(db *sqlx.DB) {
 	var data [][]string
 
 	for _, oss := range ownedStocksSummary {
-		var stock string
-		if oss.ShortName.String == "" {
-			stock = strings.Trim(oss.Ticker.String, " ")
-		} else {
-			stock = oss.ShortName.String
-		}
 
 		data = append(data, []string{
 			oss.PortfolioName.String,
-			stock,
+			oss.GetStockName(),
 			oss.Shares.String,
 			oss.LastPrice.String,
 			oss.AveragePrice.String,

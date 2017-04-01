@@ -1,6 +1,9 @@
 package models
 
-import "database/sql"
+import (
+	"database/sql"
+	"strings"
+)
 
 type OwnedStockSummary struct {
 	PortfolioId                sql.NullString `db:"portfolio_id"`
@@ -20,4 +23,12 @@ type OwnedStockSummary struct {
 	PercentageGain             sql.NullString `db:"percentage_gain"`
 	GainBaseCurrency           sql.NullString `db:"gain_base_currency"`
 	PercentageGainBaseCurrency sql.NullString `db:"percentage_gain_base_currency"`
+}
+
+func (oss OwnedStockSummary) GetStockName() string {
+	if oss.ShortName.String == "" {
+		return strings.Trim(oss.Ticker.String, " ")
+	} else {
+		return oss.ShortName.String
+	}
 }
