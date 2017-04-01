@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/mgierok/monujo/repository"
-	"github.com/olekukonko/tablewriter"
 )
 
 func Summary(db *sqlx.DB) {
@@ -33,8 +31,7 @@ func Summary(db *sqlx.DB) {
 		})
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{
+	header := []string{
 		"Portfolio Name",
 		"Stock",
 		"Shares",
@@ -46,12 +43,9 @@ func Summary(db *sqlx.DB) {
 		"Gain BC",
 		"Gain%",
 		"Gain BC%",
-	})
+	}
 
-	table.AppendBulk(data)
-	table.SetAutoMergeCells(true)
-	table.SetRowLine(true)
-	table.Render()
+	DrawTable(header, data)
 
 	data = data[0:0]
 	fmt.Println("")
@@ -74,8 +68,7 @@ func Summary(db *sqlx.DB) {
 		})
 	}
 
-	table = tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{
+	header = []string{
 		"Portfolio Id",
 		"Portfolio Name",
 		"Cache Value",
@@ -85,10 +78,7 @@ func Summary(db *sqlx.DB) {
 		"Gain Of Ownded Shares",
 		"Estimated Gain",
 		"Estimated Gain Costs Inc.",
-	})
+	}
 
-	table.AppendBulk(data)
-	table.SetAutoMergeCells(true)
-	table.SetRowLine(true)
-	table.Render()
+	DrawTable(header, data)
 }
