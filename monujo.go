@@ -21,9 +21,12 @@ func main() {
 	var action int
 	fmt.Scanln(&action)
 
+	db := GetDbConnection()
+	defer db.Close()
+
 	if action == 1 {
-		Summary()
+		Summary(db)
 	} else if action == 2 {
-		PutTransaction()
+		PutTransaction(db)
 	}
 }

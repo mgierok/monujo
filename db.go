@@ -17,7 +17,7 @@ type DbConfig struct {
 	Dbname   string
 }
 
-func GetDb() *sql.DB {
+func GetDbConnection() *sql.DB {
 	dbConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/db.json")
 	dbConfigFile, err := ioutil.ReadFile(dbConfigFilePath)
 	dbConfig := DbConfig{}

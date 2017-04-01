@@ -12,9 +12,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-func PutTransaction() {
-	db := GetDb()
-	defer db.Close()
+func PutTransaction(db *sql.DB) {
 
 	portfolioId := choosePortfolio(db)
 	date := provideDateOfTransaction()
