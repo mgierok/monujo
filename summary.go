@@ -10,6 +10,41 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+type OwnedSharesSummary struct {
+	portfolioId                sql.NullString
+	portfolioName              sql.NullString
+	ticker                     sql.NullString
+	shortName                  sql.NullString
+	shares                     sql.NullString
+	lastPrice                  sql.NullString
+	marketValue                sql.NullString
+	currency                   sql.NullString
+	exchangeRate               sql.NullString
+	lastPriceBaseCurrency      sql.NullString
+	marketValueBaseCurrency    sql.NullString
+	averagePrice               sql.NullString
+	averagePriceBaseCurrency   sql.NullString
+	gain                       sql.NullString
+	percentageGain             sql.NullString
+	gainBaseCurrency           sql.NullString
+	percentageGainBaseCurrency sql.NullString
+}
+
+type PortfolioSummary struct {
+	portfolioId           sql.NullString
+	name                  sql.NullString
+	currency              sql.NullString
+	cacheValue            sql.NullString
+	outgoings             sql.NullString
+	incomings             sql.NullString
+	gainOfSoldShares      sql.NullString
+	commision             sql.NullString
+	tax                   sql.NullString
+	gainOfOwnedShares     sql.NullString
+	estimatedGain         sql.NullString
+	estimatedGainCostsInc sql.NullString
+}
+
 func Summary() {
 	db := GetDb()
 	defer db.Close()
@@ -20,64 +55,48 @@ func Summary() {
 	var data [][]string
 
 	for rows.Next() {
-		var portfolioId sql.NullString
-		var portfolioName sql.NullString
-		var ticker sql.NullString
-		var shortName sql.NullString
-		var shares sql.NullString
-		var lastPrice sql.NullString
-		var marketValue sql.NullString
-		var currency sql.NullString
-		var exchangeRate sql.NullString
-		var lastPriceBaseCurrency sql.NullString
-		var marketValueBaseCurrency sql.NullString
-		var averagePrice sql.NullString
-		var averagePriceBaseCurrency sql.NullString
-		var gain sql.NullString
-		var percentageGain sql.NullString
-		var gainBaseCurrency sql.NullString
-		var percentageGainBaseCurrency sql.NullString
+		var oss OwnedSharesSummary
 
 		err = rows.Scan(
-			&portfolioId,
-			&portfolioName,
-			&ticker,
-			&shortName,
-			&shares,
-			&lastPrice,
-			&marketValue,
-			&currency,
-			&exchangeRate,
-			&lastPriceBaseCurrency,
-			&marketValueBaseCurrency,
-			&averagePrice,
-			&averagePriceBaseCurrency,
-			&gain,
-			&percentageGain,
-			&gainBaseCurrency,
-			&percentageGainBaseCurrency,
+			&oss.portfolioId,
+			&oss.portfolioName,
+			&oss.ticker,
+			&oss.shortName,
+			&oss.shares,
+			&oss.lastPrice,
+			&oss.marketValue,
+			&oss.currency,
+			&oss.exchangeRate,
+			&oss.lastPriceBaseCurrency,
+			&oss.marketValueBaseCurrency,
+			&oss.averagePrice,
+			&oss.averagePriceBaseCurrency,
+			&oss.gain,
+			&oss.percentageGain,
+			&oss.gainBaseCurrency,
+			&oss.percentageGainBaseCurrency,
 		)
 		LogError(err)
 
 		var stock string
-		if shortName.String == "" {
-			stock = strings.Trim(ticker.String, " ")
+		if oss.shortName.String == "" {
+			stock = strings.Trim(oss.ticker.String, " ")
 		} else {
-			stock = shortName.String
+			stock = oss.shortName.String
 		}
 
 		data = append(data, []string{
-			portfolioName.String,
+			oss.portfolioName.String,
 			stock,
-			shares.String,
-			lastPrice.String,
-			averagePrice.String,
-			lastPriceBaseCurrency.String,
-			averagePriceBaseCurrency.String,
-			gain.String,
-			gainBaseCurrency.String,
-			percentageGain.String,
-			percentageGainBaseCurrency.String,
+			oss.shares.String,
+			oss.lastPrice.String,
+			oss.averagePrice.String,
+			oss.lastPriceBaseCurrency.String,
+			oss.averagePriceBaseCurrency.String,
+			oss.gain.String,
+			oss.gainBaseCurrency.String,
+			oss.percentageGain.String,
+			oss.percentageGainBaseCurrency.String,
 		})
 	}
 
@@ -109,45 +128,34 @@ func Summary() {
 	LogError(err)
 
 	for rows.Next() {
-		var portfolioId sql.NullString
-		var name sql.NullString
-		var currency sql.NullString
-		var cacheValue sql.NullString
-		var outgoings sql.NullString
-		var incomings sql.NullString
-		var gainOfSoldShares sql.NullString
-		var commision sql.NullString
-		var tax sql.NullString
-		var gainOfOwnedShares sql.NullString
-		var estimatedGain sql.NullString
-		var estimatedGainCostsInc sql.NullString
+		var ps PortfolioSummary
 
 		err = rows.Scan(
-			&portfolioId,
-			&name,
-			&currency,
-			&cacheValue,
-			&outgoings,
-			&incomings,
-			&gainOfSoldShares,
-			&commision,
-			&tax,
-			&gainOfOwnedShares,
-			&estimatedGain,
-			&estimatedGainCostsInc,
+			&ps.portfolioId,
+			&ps.name,
+			&ps.currency,
+			&ps.cacheValue,
+			&ps.outgoings,
+			&ps.incomings,
+			&ps.gainOfSoldShares,
+			&ps.commision,
+			&ps.tax,
+			&ps.gainOfOwnedShares,
+			&ps.estimatedGain,
+			&ps.estimatedGainCostsInc,
 		)
 		LogError(err)
 
 		data = append(data, []string{
-			portfolioId.String,
-			name.String,
-			cacheValue.String,
-			gainOfSoldShares.String,
-			commision.String,
-			tax.String,
-			gainOfOwnedShares.String,
-			estimatedGain.String,
-			estimatedGainCostsInc.String,
+			ps.portfolioId.String,
+			ps.name.String,
+			ps.cacheValue.String,
+			ps.gainOfSoldShares.String,
+			ps.commision.String,
+			ps.tax.String,
+			ps.gainOfOwnedShares.String,
+			ps.estimatedGain.String,
+			ps.estimatedGainCostsInc.String,
 		})
 	}
 
