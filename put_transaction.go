@@ -8,11 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/olekukonko/tablewriter"
 )
 
-func PutTransaction(db *sql.DB) {
+func PutTransaction(db *sqlx.DB) {
 
 	portfolioId := choosePortfolio(db)
 	date := provideDateOfTransaction()
@@ -50,7 +51,7 @@ func PutTransaction(db *sql.DB) {
 	fmt.Printf("Transaction has been recorded with an ID: %d", transactionId)
 }
 
-func choosePortfolio(db *sql.DB) int64 {
+func choosePortfolio(db *sqlx.DB) int64 {
 	fmt.Println("Choose portfolio")
 	fmt.Println("")
 
@@ -99,7 +100,7 @@ func choosePortfolio(db *sql.DB) int64 {
 	}
 }
 
-func chooseTypeOfTransaction(db *sql.DB) string {
+func chooseTypeOfTransaction(db *sqlx.DB) string {
 	fmt.Println("Choose type of transaction")
 	fmt.Println("")
 
@@ -267,7 +268,7 @@ func provideTax() float64 {
 	return floatTax
 }
 
-func chooseCurrency(db *sql.DB) string {
+func chooseCurrency(db *sqlx.DB) string {
 	fmt.Println("Choose currency")
 	fmt.Println("")
 

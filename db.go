@@ -1,13 +1,13 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 
 	"github.com/cep21/xdgbasedir"
+	"github.com/jmoiron/sqlx"
 )
 
 type DbConfig struct {
@@ -17,7 +17,7 @@ type DbConfig struct {
 	Dbname   string
 }
 
-func GetDbConnection() *sql.DB {
+func GetDbConnection() *sqlx.DB {
 	dbConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/db.json")
 	dbConfigFile, err := ioutil.ReadFile(dbConfigFilePath)
 	dbConfig := DbConfig{}
@@ -30,15 +30,10 @@ func GetDbConnection() *sql.DB {
 		dbConfig.Password,
 		dbConfig.Dbname,
 	)
-	db, err := sql.Open("postgres", dbinfo)
+	db, err := sqlx.Connect("postgres", dbinfo)
 
 	if err != nil {
-		log.Fatal("Error: The data source arguments are not valid")
-	}
-
-	err = db.Ping()
-	if err != nil {
-		log.Fatal("Error: Could not establish a connection with the database")
+		log.Fatalln(err)
 	}
 
 	return db
