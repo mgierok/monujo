@@ -179,7 +179,8 @@ CREATE TABLE operations (
     portfolio_id integer NOT NULL,
     date date NOT NULL,
     type financing_operation NOT NULL,
-    value numeric
+    value numeric,
+    description character varying(128)
 );
 
 
