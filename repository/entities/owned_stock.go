@@ -25,6 +25,8 @@ type OwnedStock struct {
 	PercentageGainBaseCurrency sql.NullString `db:"percentage_gain_base_currency"`
 }
 
+type OwnedStocks []OwnedStock
+
 func (stock OwnedStock) GetStockName() string {
 	if stock.ShortName.String == "" {
 		return strings.Trim(stock.Ticker.String, " ")
