@@ -8,25 +8,25 @@ import (
 )
 
 func Summary() {
-	ownedStocksSummary, err := repository.GetAllOwnedStocksSummary()
+	ownedStocks, err := repository.OwnedStocks()
 	LogError(err)
 
 	var data [][]string
 
-	for _, oss := range ownedStocksSummary {
+	for _, os := range ownedStocks {
 
 		data = append(data, []string{
-			oss.PortfolioName.String,
-			oss.GetStockName(),
-			oss.Shares.String,
-			oss.LastPrice.String,
-			oss.AveragePrice.String,
-			oss.LastPriceBaseCurrency.String,
-			oss.AveragePriceBaseCurrency.String,
-			oss.Gain.String,
-			oss.GainBaseCurrency.String,
-			oss.PercentageGain.String,
-			oss.PercentageGainBaseCurrency.String,
+			os.PortfolioName.String,
+			os.GetStockName(),
+			os.Shares.String,
+			os.LastPrice.String,
+			os.AveragePrice.String,
+			os.LastPriceBaseCurrency.String,
+			os.AveragePriceBaseCurrency.String,
+			os.Gain.String,
+			os.GainBaseCurrency.String,
+			os.PercentageGain.String,
+			os.PercentageGainBaseCurrency.String,
 		})
 	}
 

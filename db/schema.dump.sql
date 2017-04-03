@@ -263,10 +263,10 @@ CREATE TABLE securities (
 
 
 --
--- Name: owned_shares_summary; Type: VIEW; Schema: public; Owner: -
+-- Name: owned_stocks; Type: VIEW; Schema: public; Owner: -
 --
 
-CREATE VIEW owned_shares_summary AS
+CREATE VIEW owned_stocks AS
  SELECT t.portfolio_id,
     p.name AS portfolio_name,
     t.ticker,
@@ -390,7 +390,7 @@ CREATE VIEW portfolios_summary AS
           GROUP BY t_1.portfolio_id) "in" ON (("in".portfolio_id = p.portfolio_id)))
      LEFT JOIN ( SELECT s.portfolio_id,
             sum(s.gain_base_currency) AS gain_of_owned_shares
-           FROM owned_shares_summary s
+           FROM owned_stocks s
           GROUP BY s.portfolio_id) os ON ((os.portfolio_id = p.portfolio_id)));
 
 

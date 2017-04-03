@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-type OwnedStockSummary struct {
+type OwnedStock struct {
 	PortfolioId                sql.NullString `db:"portfolio_id"`
 	PortfolioName              sql.NullString `db:"portfolio_name"`
 	Ticker                     sql.NullString `db:"ticker"`
@@ -25,10 +25,10 @@ type OwnedStockSummary struct {
 	PercentageGainBaseCurrency sql.NullString `db:"percentage_gain_base_currency"`
 }
 
-func (oss OwnedStockSummary) GetStockName() string {
-	if oss.ShortName.String == "" {
-		return strings.Trim(oss.Ticker.String, " ")
+func (stock OwnedStock) GetStockName() string {
+	if stock.ShortName.String == "" {
+		return strings.Trim(stock.Ticker.String, " ")
 	} else {
-		return oss.ShortName.String
+		return stock.ShortName.String
 	}
 }
