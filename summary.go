@@ -17,7 +17,7 @@ func Summary() {
 
 		data = append(data, []string{
 			os.PortfolioName.String,
-			os.GetStockName(),
+			os.DisplayName(),
 			os.Shares.String,
 			os.LastPrice.String,
 			os.AveragePrice.String,

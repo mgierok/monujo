@@ -31,7 +31,7 @@ type OwnedStock struct {
 
 type OwnedStocks []OwnedStock
 
-func (stock *Stock) GetStockName() string {
+func (stock *Stock) DisplayName() string {
 	if stock.ShortName.String == "" {
 		return strings.Trim(stock.Ticker.String, " ")
 	} else {
