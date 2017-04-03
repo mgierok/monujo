@@ -321,29 +321,10 @@ CREATE VIEW owned_stocks AS
 
 
 --
--- Name: portfolios_portfolio_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: portfolios_ext; Type: VIEW; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE portfolios_portfolio_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: portfolios_portfolio_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE portfolios_portfolio_id_seq OWNED BY portfolios.portfolio_id;
-
-
---
--- Name: portfolios_summary; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW portfolios_summary AS
+CREATE VIEW portfolios_ext AS
  SELECT p.portfolio_id,
     p.name,
     p.currency,
@@ -392,6 +373,25 @@ CREATE VIEW portfolios_summary AS
             sum(s.gain_base_currency) AS gain_of_owned_shares
            FROM owned_stocks s
           GROUP BY s.portfolio_id) os ON ((os.portfolio_id = p.portfolio_id)));
+
+
+--
+-- Name: portfolios_portfolio_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE portfolios_portfolio_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: portfolios_portfolio_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE portfolios_portfolio_id_seq OWNED BY portfolios.portfolio_id;
 
 
 --

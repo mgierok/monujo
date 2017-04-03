@@ -50,20 +50,20 @@ func Summary() {
 	fmt.Println("")
 	fmt.Println("")
 
-	portfoliosSummary, err := repository.GetAllPortfoliosSummary()
+	portfoliosExt, err := repository.PortfoliosExt()
 	LogError(err)
 
-	for _, ps := range portfoliosSummary {
+	for _, pe := range portfoliosExt {
 		data = append(data, []string{
-			ps.PortfolioId.String,
-			ps.Name.String,
-			ps.CacheValue.String,
-			ps.GainOfSoldShares.String,
-			ps.Commision.String,
-			ps.Tax.String,
-			ps.GainOfOwnedShares.String,
-			ps.EstimatedGain.String,
-			ps.EstimatedGainCostsInc.String,
+			pe.PortfolioId.String,
+			pe.Name.String,
+			pe.CacheValue.String,
+			pe.GainOfSoldShares.String,
+			pe.Commision.String,
+			pe.Tax.String,
+			pe.GainOfOwnedShares.String,
+			pe.EstimatedGain.String,
+			pe.EstimatedGainCostsInc.String,
 		})
 	}
 
