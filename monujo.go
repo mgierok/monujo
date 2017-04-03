@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/mgierok/monujo/repository"
 )
 
 func main() {
@@ -17,10 +19,11 @@ func main() {
 	fmt.Scanln(&action)
 
 	db := GetDbConnection()
+	repository.SetDb(db)
 	defer db.Close()
 
 	if action == 1 {
-		Summary(db)
+		Summary()
 	} else if action == 2 {
 		PutTransaction(db)
 	}

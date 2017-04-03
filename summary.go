@@ -3,13 +3,12 @@ package main
 import (
 	"fmt"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/mgierok/monujo/repository"
 )
 
-func Summary(db *sqlx.DB) {
-	ownedStocksSummary, err := repository.GetAllOwnedStocksSummary(db)
+func Summary() {
+	ownedStocksSummary, err := repository.GetAllOwnedStocksSummary()
 	LogError(err)
 
 	var data [][]string
@@ -51,7 +50,7 @@ func Summary(db *sqlx.DB) {
 	fmt.Println("")
 	fmt.Println("")
 
-	portfoliosSummary, err := repository.GetAllPortfoliosSummary(db)
+	portfoliosSummary, err := repository.GetAllPortfoliosSummary()
 	LogError(err)
 
 	for _, ps := range portfoliosSummary {
