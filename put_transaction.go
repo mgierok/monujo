@@ -20,7 +20,7 @@ func PutTransaction(db *sqlx.DB) {
 	ticker := provideTicker()
 	price := providePrice()
 	typeOfTransaction := chooseTypeOfTransaction(db)
-	currency := chooseCurrency(db)
+	currency := chooseCurrency()
 	numberOfShares := provideNumberOfShares()
 	commision := provideCommision()
 	exchangeRate := provideExchangeRate()
@@ -264,33 +264,22 @@ func provideTax() float64 {
 	return floatTax
 }
 
-func chooseCurrency(db *sqlx.DB) string {
+func chooseCurrency() string {
 	fmt.Println("Choose currency")
 	fmt.Println("")
 
-	rows, err := db.Query("SELECT currency FROM currencies ORDER BY currency ASC")
+	currencies, err := repository.Currencies()
 	LogError(err)
-
-	var currencies = make(map[string]string)
-
-	for rows.Next() {
-		var currency string
-
-		err = rows.Scan(
-			&currency,
-		)
-		LogError(err)
-
-		currencies[currency] = currency
-	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{
 		"Currency",
 	})
 
-	for _, currency := range currencies {
-		table.Append([]string{currency})
+	var currenciesDict = make(map[string]string)
+	for _, c := range currencies {
+		currenciesDict[c.Symbol.String] = c.Symbol.String
+		table.Append([]string{c.Symbol.String})
 	}
 
 	table.SetAutoMergeCells(true)
@@ -304,11 +293,11 @@ func chooseCurrency(db *sqlx.DB) string {
 
 	currency = strings.ToUpper(currency)
 
-	_, exists := currencies[currency]
+	_, exists := currenciesDict[currency]
 	if exists {
 		return currency
 	} else {
 		fmt.Printf("\n%s is not a valid currency\n\n", currency)
-		return chooseCurrency(db)
+		return chooseCurrency()
 	}
 }
