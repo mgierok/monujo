@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"strconv"
@@ -10,12 +9,13 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/mgierok/monujo/repository"
 	"github.com/olekukonko/tablewriter"
 )
 
 func PutTransaction(db *sqlx.DB) {
 
-	portfolioId := choosePortfolio(db)
+	portfolioId := choosePortfolio()
 	date := provideDateOfTransaction()
 	ticker := provideTicker()
 	price := providePrice()
@@ -51,26 +51,12 @@ func PutTransaction(db *sqlx.DB) {
 	fmt.Printf("Transaction has been recorded with an ID: %d", transactionId)
 }
 
-func choosePortfolio(db *sqlx.DB) int64 {
+func choosePortfolio() int64 {
 	fmt.Println("Choose portfolio")
 	fmt.Println("")
 
-	rows, err := db.Query("SELECT portfolio_id, name FROM portfolios ORDER BY portfolio_id ASC")
+	portfolios, err := repository.Portfolios()
 	LogError(err)
-
-	var portfolios = make(map[int64]string)
-
-	for rows.Next() {
-		var portfolioId sql.NullInt64
-		var portfolioName sql.NullString
-		err = rows.Scan(
-			&portfolioId,
-			&portfolioName,
-		)
-		LogError(err)
-
-		portfolios[portfolioId.Int64] = portfolioName.String
-	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{
@@ -78,8 +64,11 @@ func choosePortfolio(db *sqlx.DB) int64 {
 		"Portfolio Name",
 	})
 
-	for portfolioId, portfolioName := range portfolios {
-		table.Append([]string{strconv.FormatInt(portfolioId, 10), portfolioName})
+	var portfoliosDict = make(map[int64]string)
+	for _, p := range portfolios {
+		table.Append([]string{p.PortfolioId.String, p.Name.String})
+		portfolioId, _ := strconv.ParseInt(p.PortfolioId.String, 10, 64)
+		portfoliosDict[portfolioId] = p.Name.String
 	}
 
 	table.SetAutoMergeCells(true)
@@ -87,16 +76,23 @@ func choosePortfolio(db *sqlx.DB) int64 {
 	table.Render()
 	fmt.Println("")
 
-	var portfolioId int64
+	var portfolioIdString string
 	fmt.Print("Portfolio ID: ")
-	fmt.Scanln(&portfolioId)
+	fmt.Scanln(&portfolioIdString)
 
-	_, exists := portfolios[portfolioId]
+	portfolioId, err := strconv.ParseInt(portfolioIdString, 10, 64)
+
+	if nil != err {
+		fmt.Printf("\n%sd is not a valid portfolio ID\n\n", portfolioIdString)
+		return choosePortfolio()
+	}
+
+	_, exists := portfoliosDict[portfolioId]
 	if exists {
 		return portfolioId
 	} else {
 		fmt.Printf("\n%d is not a valid portfolio ID\n\n", portfolioId)
-		return choosePortfolio(db)
+		return choosePortfolio()
 	}
 }
 
