@@ -155,6 +155,17 @@ CREATE TABLE disposals (
 
 
 --
+-- Name: financial_operation_types; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW financial_operation_types AS
+ SELECT e.enumlabel AS type
+   FROM (pg_type t
+     JOIN pg_enum e ON ((t.oid = e.enumtypid)))
+  WHERE (t.typname = 'financing_operation'::name);
+
+
+--
 -- Name: latest_quotes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -411,11 +422,11 @@ CREATE TABLE quotes (
 
 
 --
--- Name: transaction_operation_types; Type: VIEW; Schema: public; Owner: -
+-- Name: transactional_operation_types; Type: VIEW; Schema: public; Owner: -
 --
 
-CREATE VIEW transaction_operation_types AS
- SELECT e.enumlabel AS transaction_operation_type
+CREATE VIEW transactional_operation_types AS
+ SELECT e.enumlabel AS type
    FROM (pg_type t
      JOIN pg_enum e ON ((t.oid = e.enumtypid)))
   WHERE (t.typname = 'transaction_operation_type'::name);

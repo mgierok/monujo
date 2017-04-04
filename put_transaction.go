@@ -19,7 +19,7 @@ func PutTransaction(db *sqlx.DB) {
 	date := provideDateOfTransaction()
 	ticker := provideTicker()
 	price := providePrice()
-	typeOfTransaction := chooseTypeOfTransaction(db)
+	typeOfTransaction := chooseTypeOfTransaction()
 	currency := chooseCurrency()
 	numberOfShares := provideNumberOfShares()
 	commision := provideCommision()
@@ -96,33 +96,23 @@ func choosePortfolio() int64 {
 	}
 }
 
-func chooseTypeOfTransaction(db *sqlx.DB) string {
+func chooseTypeOfTransaction() string {
 	fmt.Println("Choose type of transaction")
 	fmt.Println("")
 
-	rows, err := db.Query("SELECT transaction_operation_type FROM transaction_operation_types ORDER BY transaction_operation_type ASC")
+	operationTypes, err := repository.TransactionalOperationTypes()
 	LogError(err)
 
-	var typeOfTransactions = make(map[string]string)
-
-	for rows.Next() {
-		var typeOfTransaction string
-
-		err = rows.Scan(
-			&typeOfTransaction,
-		)
-		LogError(err)
-
-		typeOfTransactions[typeOfTransaction] = typeOfTransaction
-	}
+	var operationTypesDict = make(map[string]string)
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{
 		"Transaction Type",
 	})
 
-	for _, typeOfTransaction := range typeOfTransactions {
-		table.Append([]string{typeOfTransaction})
+	for _, ot := range operationTypes {
+		operationTypesDict[ot.Type.String] = ot.Type.String
+		table.Append([]string{ot.Type.String})
 	}
 
 	table.SetAutoMergeCells(true)
@@ -130,16 +120,16 @@ func chooseTypeOfTransaction(db *sqlx.DB) string {
 	table.Render()
 	fmt.Println("")
 
-	var typeOfTransaction string
+	var operationType string
 	fmt.Print("Transaction type: ")
-	fmt.Scanln(&typeOfTransaction)
+	fmt.Scanln(&operationType)
 
-	_, exists := typeOfTransactions[typeOfTransaction]
+	_, exists := operationTypesDict[operationType]
 	if exists {
-		return typeOfTransaction
+		return operationType
 	} else {
-		fmt.Printf("\n%s is not a valid transaction type\n\n", typeOfTransaction)
-		return chooseTypeOfTransaction(db)
+		fmt.Printf("\n%s is not a valid transaction type\n\n", operationType)
+		return chooseTypeOfTransaction()
 	}
 }
 
