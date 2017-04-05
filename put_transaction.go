@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/mgierok/monujo/repository"
 	"github.com/mgierok/monujo/repository/entities"
-	"github.com/olekukonko/tablewriter"
 )
 
 func PutTransaction() {
@@ -26,27 +24,24 @@ func PutTransaction() {
 	t.ExchangeRate = provideExchangeRate()
 	t.Tax = provideTax()
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.AppendBulk(
-		[][]string{
-			[]string{"Portfolio ID", strconv.FormatInt(t.PortfolioId, 10)},
-			[]string{"Date", t.Date},
-			[]string{"Ticker", t.Ticker},
-			[]string{"Price", strconv.FormatFloat(t.Price, 'f', -1, 64)},
-			[]string{"Type", t.TransactionOperationType},
-			[]string{"Currency", t.Currency},
-			[]string{"Shares", strconv.FormatFloat(t.Shares, 'f', -1, 64)},
-			[]string{"Commision", strconv.FormatFloat(t.Commision, 'f', -1, 64)},
-			[]string{"Exchange Rate", strconv.FormatFloat(t.ExchangeRate, 'f', -1, 64)},
-			[]string{"Tax", strconv.FormatFloat(t.Tax, 'f', -1, 64)},
-		},
-	)
-	table.Render()
+	summary := [][]string{
+		[]string{"Portfolio ID", strconv.FormatInt(t.PortfolioId, 10)},
+		[]string{"Date", t.Date},
+		[]string{"Ticker", t.Ticker},
+		[]string{"Price", strconv.FormatFloat(t.Price, 'f', -1, 64)},
+		[]string{"Type", t.TransactionOperationType},
+		[]string{"Currency", t.Currency},
+		[]string{"Shares", strconv.FormatFloat(t.Shares, 'f', -1, 64)},
+		[]string{"Commision", strconv.FormatFloat(t.Commision, 'f', -1, 64)},
+		[]string{"Exchange Rate", strconv.FormatFloat(t.ExchangeRate, 'f', -1, 64)},
+		[]string{"Tax", strconv.FormatFloat(t.Tax, 'f', -1, 64)},
+	}
+	DrawTable([]string{}, summary)
 
 	transactionId, err := repository.StoreTransaction(t)
 	LogError(err)
 
-	fmt.Printf("Transaction has been recorded with an ID: %d", transactionId)
+	fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
 }
 
 func choosePortfolio() int64 {
@@ -56,22 +51,20 @@ func choosePortfolio() int64 {
 	portfolios, err := repository.Portfolios()
 	LogError(err)
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{
+	header := []string{
 		"Portfolio Id",
 		"Portfolio Name",
-	})
+	}
 
 	var portfoliosDict = make(map[int64]string)
+	var data [][]string
 	for _, p := range portfolios {
-		table.Append([]string{p.PortfolioId.String, p.Name.String})
+		data = append(data, []string{p.PortfolioId.String, p.Name.String})
 		portfolioId, _ := strconv.ParseInt(p.PortfolioId.String, 10, 64)
 		portfoliosDict[portfolioId] = p.Name.String
 	}
 
-	table.SetAutoMergeCells(true)
-	table.SetRowLine(true)
-	table.Render()
+	DrawTable(header, data)
 	fmt.Println("")
 
 	var portfolioIdString string
@@ -101,21 +94,18 @@ func chooseTypeOfTransaction() string {
 	operationTypes, err := repository.TransactionalOperationTypes()
 	LogError(err)
 
-	var operationTypesDict = make(map[string]string)
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{
+	header := []string{
 		"Transaction Type",
-	})
-
-	for _, ot := range operationTypes {
-		operationTypesDict[ot.Type.String] = ot.Type.String
-		table.Append([]string{ot.Type.String})
 	}
 
-	table.SetAutoMergeCells(true)
-	table.SetRowLine(true)
-	table.Render()
+	var operationTypesDict = make(map[string]string)
+	var data [][]string
+	for _, ot := range operationTypes {
+		operationTypesDict[ot.Type.String] = ot.Type.String
+		data = append(data, []string{ot.Type.String})
+	}
+
+	DrawTable(header, data)
 	fmt.Println("")
 
 	var operationType string
@@ -259,20 +249,18 @@ func chooseCurrency() string {
 	currencies, err := repository.Currencies()
 	LogError(err)
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{
+	header := []string{
 		"Currency",
-	})
-
-	var currenciesDict = make(map[string]string)
-	for _, c := range currencies {
-		currenciesDict[c.Symbol.String] = c.Symbol.String
-		table.Append([]string{c.Symbol.String})
 	}
 
-	table.SetAutoMergeCells(true)
-	table.SetRowLine(true)
-	table.Render()
+	var currenciesDict = make(map[string]string)
+	var data [][]string
+	for _, c := range currencies {
+		currenciesDict[c.Symbol.String] = c.Symbol.String
+		data = append(data, []string{c.Symbol.String})
+	}
+
+	DrawTable(header, data)
 	fmt.Println("")
 
 	var currency string
