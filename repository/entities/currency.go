@@ -1,9 +1,7 @@
 package entities
 
-import "database/sql"
-
 type Currency struct {
-	Symbol sql.NullString `db:"currency"`
+	Symbol string `db:"currency"`
 }
 
 type Currencies []Currency

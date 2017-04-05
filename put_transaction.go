@@ -256,8 +256,8 @@ func chooseCurrency() string {
 	var currenciesDict = make(map[string]string)
 	var data [][]string
 	for _, c := range currencies {
-		currenciesDict[c.Symbol.String] = c.Symbol.String
-		data = append(data, []string{c.Symbol.String})
+		currenciesDict[c.Symbol] = c.Symbol
+		data = append(data, []string{c.Symbol})
 	}
 
 	DrawTable(header, data)
