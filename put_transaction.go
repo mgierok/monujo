@@ -101,8 +101,8 @@ func chooseTypeOfTransaction() string {
 	var operationTypesDict = make(map[string]string)
 	var data [][]string
 	for _, ot := range operationTypes {
-		operationTypesDict[ot.Type.String] = ot.Type.String
-		data = append(data, []string{ot.Type.String})
+		operationTypesDict[ot.Type] = ot.Type
+		data = append(data, []string{ot.Type})
 	}
 
 	DrawTable(header, data)

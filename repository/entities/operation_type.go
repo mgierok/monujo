@@ -1,9 +1,7 @@
 package entities
 
-import "database/sql"
-
 type OperationType struct {
-	Type sql.NullString `db:"type"`
+	Type string `db:"type"`
 }
 
 type OperationTypes []OperationType
