@@ -25,6 +25,6 @@ func main() {
 	if action == 1 {
 		Summary()
 	} else if action == 2 {
-		PutTransaction(db)
+		PutTransaction()
 	}
 }

@@ -7,45 +7,43 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"github.com/mgierok/monujo/repository"
+	"github.com/mgierok/monujo/repository/entities"
 	"github.com/olekukonko/tablewriter"
 )
 
-func PutTransaction(db *sqlx.DB) {
+func PutTransaction() {
 
-	portfolioId := choosePortfolio()
-	date := provideDateOfTransaction()
-	ticker := provideTicker()
-	price := providePrice()
-	typeOfTransaction := chooseTypeOfTransaction()
-	currency := chooseCurrency()
-	numberOfShares := provideNumberOfShares()
-	commision := provideCommision()
-	exchangeRate := provideExchangeRate()
-	tax := provideTax()
+	var t entities.Transaction
+	t.PortfolioId = choosePortfolio()
+	t.Date = provideDateOfTransaction()
+	t.Ticker = provideTicker()
+	t.Price = providePrice()
+	t.TransactionOperationType = chooseTypeOfTransaction()
+	t.Currency = chooseCurrency()
+	t.Shares = provideNumberOfShares()
+	t.Commision = provideCommision()
+	t.ExchangeRate = provideExchangeRate()
+	t.Tax = provideTax()
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.AppendBulk(
 		[][]string{
-			[]string{"Portfolio ID", strconv.FormatInt(portfolioId, 10)},
-			[]string{"Date", date},
-			[]string{"Ticker", ticker},
-			[]string{"Price", strconv.FormatFloat(price, 'f', -1, 64)},
-			[]string{"Type", typeOfTransaction},
-			[]string{"Currency", currency},
-			[]string{"Shares", strconv.FormatFloat(numberOfShares, 'f', -1, 64)},
-			[]string{"Commision", strconv.FormatFloat(commision, 'f', -1, 64)},
-			[]string{"Exchange Rate", strconv.FormatFloat(exchangeRate, 'f', -1, 64)},
-			[]string{"Tax", strconv.FormatFloat(tax, 'f', -1, 64)},
+			[]string{"Portfolio ID", strconv.FormatInt(t.PortfolioId, 10)},
+			[]string{"Date", t.Date},
+			[]string{"Ticker", t.Ticker},
+			[]string{"Price", strconv.FormatFloat(t.Price, 'f', -1, 64)},
+			[]string{"Type", t.TransactionOperationType},
+			[]string{"Currency", t.Currency},
+			[]string{"Shares", strconv.FormatFloat(t.Shares, 'f', -1, 64)},
+			[]string{"Commision", strconv.FormatFloat(t.Commision, 'f', -1, 64)},
+			[]string{"Exchange Rate", strconv.FormatFloat(t.ExchangeRate, 'f', -1, 64)},
+			[]string{"Tax", strconv.FormatFloat(t.Tax, 'f', -1, 64)},
 		},
 	)
 	table.Render()
 
-	var transactionId int
-	err := db.QueryRow(`INSERT INTO transactions(portfolio_id, date, ticker, price, type, currency, shares, commision, exchange_rate, tax)
-		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING transaction_id`, portfolioId, date, ticker, price, typeOfTransaction, currency, numberOfShares, commision, exchangeRate, tax).Scan(&transactionId)
+	transactionId, err := repository.StoreTransaction(t)
 	LogError(err)
 
 	fmt.Printf("Transaction has been recorded with an ID: %d", transactionId)
