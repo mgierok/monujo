@@ -1,40 +1,41 @@
 package entities
 
 import (
-	"database/sql"
 	"strings"
+
+	"database/sql"
 )
 
 type Stock struct {
-	Ticker    sql.NullString `db:"ticker"`
-	ShortName sql.NullString `db:"short_name"`
-	LastPrice sql.NullString `db:"last_price"`
-	Currency  sql.NullString `db:"currency"`
+	Ticker    string          `db:"ticker"`
+	ShortName sql.NullString  `db:"short_name"`
+	LastPrice sql.NullFloat64 `db:"last_price"`
+	Currency  string          `db:"currency"`
 }
 
 type OwnedStock struct {
 	Stock
-	PortfolioId                sql.NullString `db:"portfolio_id"`
-	PortfolioName              sql.NullString `db:"portfolio_name"`
-	Shares                     sql.NullString `db:"shares"`
-	MarketValue                sql.NullString `db:"market_value"`
-	ExchangeRate               sql.NullString `db:"exchange_rate"`
-	LastPriceBaseCurrency      sql.NullString `db:"last_price_base_currency"`
-	MarketValueBaseCurrency    sql.NullString `db:"market_value_base_currency"`
-	AveragePrice               sql.NullString `db:"average_price"`
-	AveragePriceBaseCurrency   sql.NullString `db:"average_price_base_currency"`
-	Gain                       sql.NullString `db:"gain"`
-	PercentageGain             sql.NullString `db:"percentage_gain"`
-	GainBaseCurrency           sql.NullString `db:"gain_base_currency"`
-	PercentageGainBaseCurrency sql.NullString `db:"percentage_gain_base_currency"`
+	PortfolioId                int64           `db:"portfolio_id"`
+	PortfolioName              string          `db:"portfolio_name"`
+	Shares                     float64         `db:"shares"`
+	MarketValue                sql.NullFloat64 `db:"market_value"`
+	ExchangeRate               sql.NullFloat64 `db:"exchange_rate"`
+	LastPriceBaseCurrency      sql.NullFloat64 `db:"last_price_base_currency"`
+	MarketValueBaseCurrency    sql.NullFloat64 `db:"market_value_base_currency"`
+	AveragePrice               float64         `db:"average_price"`
+	AveragePriceBaseCurrency   float64         `db:"average_price_base_currency"`
+	Gain                       sql.NullFloat64 `db:"gain"`
+	PercentageGain             sql.NullFloat64 `db:"percentage_gain"`
+	GainBaseCurrency           sql.NullFloat64 `db:"gain_base_currency"`
+	PercentageGainBaseCurrency sql.NullFloat64 `db:"percentage_gain_base_currency"`
 }
 
 type OwnedStocks []OwnedStock
 
 func (stock *Stock) DisplayName() string {
-	if stock.ShortName.String == "" {
-		return strings.Trim(stock.Ticker.String, " ")
-	} else {
+	if stock.ShortName.Valid {
 		return stock.ShortName.String
+	} else {
+		return strings.Trim(stock.Ticker, " ")
 	}
 }

@@ -5,6 +5,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/mgierok/monujo/repository"
+	"github.com/mgierok/monujo/sql"
 )
 
 func Summary() {
@@ -14,19 +15,18 @@ func Summary() {
 	var data [][]string
 
 	for _, os := range ownedStocks {
-
 		data = append(data, []string{
-			os.PortfolioName.String,
+			os.PortfolioName,
 			os.DisplayName(),
-			os.Shares.String,
-			os.LastPrice.String,
-			os.AveragePrice.String,
-			os.LastPriceBaseCurrency.String,
-			os.AveragePriceBaseCurrency.String,
-			os.Gain.String,
-			os.GainBaseCurrency.String,
-			os.PercentageGain.String,
-			os.PercentageGainBaseCurrency.String,
+			sql.Sprint(os.Shares),
+			sql.Sprint(os.LastPrice),
+			sql.Sprint(os.AveragePrice),
+			sql.Sprint(os.LastPriceBaseCurrency),
+			sql.Sprint(os.AveragePriceBaseCurrency),
+			sql.Sprint(os.Gain),
+			sql.Sprint(os.GainBaseCurrency),
+			sql.Sprint(os.PercentageGain),
+			sql.Sprint(os.PercentageGainBaseCurrency),
 		})
 	}
 
