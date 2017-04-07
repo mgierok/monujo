@@ -45,6 +45,7 @@ func PutTransaction() {
 }
 
 func get(f func(*entities.Transaction), t *entities.Transaction) {
+	Clear()
 	f(t)
 }
 
