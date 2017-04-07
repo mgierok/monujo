@@ -8,9 +8,9 @@ import (
 
 func main() {
 	fmt.Println("Choose action")
-	data := [][]string{
-		[]string{"1", "Summary"},
-		[]string{"2", "Put transaction"},
+	data := [][]interface{}{
+		[]interface{}{"1", "Summary"},
+		[]interface{}{"2", "Put transaction"},
 	}
 
 	DrawTable([]string{}, data)

@@ -24,7 +24,21 @@ func PutTransaction() {
 	get(exchangeRate, &t)
 	get(tax, &t)
 
-	DrawTable([]string{}, t.DisplayableArray())
+	summary := [][]interface{}{
+		[]interface{}{"Portfolio ID", t.PortfolioId},
+		[]interface{}{"Date", t.Date},
+		[]interface{}{"Ticker", t.Ticker},
+		[]interface{}{"Price", t.Price},
+		[]interface{}{"Type", t.TransactionOperationType},
+		[]interface{}{"Currency", t.Currency},
+		[]interface{}{"Shares", t.Shares},
+		[]interface{}{"Commision", t.Commision},
+		[]interface{}{"Exchange Rate", t.ExchangeRate},
+		[]interface{}{"Tax", t.Tax},
+	}
+
+	Clear()
+	DrawTable([]string{}, summary)
 
 	transactionId, err := repository.StoreTransaction(t)
 	LogError(err)
@@ -50,11 +64,10 @@ func portfolioId(e *entities.Transaction) {
 	}
 
 	var dict = make(map[int64]string)
-	var data [][]string
+	var data [][]interface{}
 	for _, p := range portfolios {
-		data = append(data, []string{p.PortfolioId.String, p.Name.String})
-		portfolioId, _ := strconv.ParseInt(p.PortfolioId.String, 10, 64)
-		dict[portfolioId] = p.Name.String
+		data = append(data, []interface{}{p.PortfolioId, p.Name})
+		dict[p.PortfolioId] = p.Name
 	}
 
 	DrawTable(header, data)
@@ -148,10 +161,10 @@ func transactionOperationType(e *entities.Transaction) {
 	}
 
 	var dict = make(map[string]string)
-	var data [][]string
+	var data [][]interface{}
 	for _, ot := range operationTypes {
 		dict[ot.Type] = ot.Type
-		data = append(data, []string{ot.Type})
+		data = append(data, []interface{}{ot.Type})
 	}
 
 	DrawTable(header, data)
@@ -183,10 +196,10 @@ func currency(e *entities.Transaction) {
 	}
 
 	var dict = make(map[string]string)
-	var data [][]string
+	var data [][]interface{}
 	for _, c := range currencies {
 		dict[c.Symbol] = c.Symbol
-		data = append(data, []string{c.Symbol})
+		data = append(data, []interface{}{c.Symbol})
 	}
 
 	DrawTable(header, data)

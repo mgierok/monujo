@@ -5,28 +5,27 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/mgierok/monujo/repository"
-	"github.com/mgierok/monujo/sql"
 )
 
 func Summary() {
 	ownedStocks, err := repository.OwnedStocks()
 	LogError(err)
 
-	var data [][]string
+	var data [][]interface{}
 
 	for _, os := range ownedStocks {
-		data = append(data, []string{
+		data = append(data, []interface{}{
 			os.PortfolioName,
 			os.DisplayName(),
-			sql.Sprint(os.Shares),
-			sql.Sprint(os.LastPrice),
-			sql.Sprint(os.AveragePrice),
-			sql.Sprint(os.LastPriceBaseCurrency),
-			sql.Sprint(os.AveragePriceBaseCurrency),
-			sql.Sprint(os.Gain),
-			sql.Sprint(os.GainBaseCurrency),
-			sql.Sprint(os.PercentageGain),
-			sql.Sprint(os.PercentageGainBaseCurrency),
+			os.Shares,
+			os.LastPrice,
+			os.AveragePrice,
+			os.LastPriceBaseCurrency,
+			os.AveragePriceBaseCurrency,
+			os.Gain,
+			os.GainBaseCurrency,
+			os.PercentageGain,
+			os.PercentageGainBaseCurrency,
 		})
 	}
 
@@ -54,16 +53,16 @@ func Summary() {
 	LogError(err)
 
 	for _, pe := range portfoliosExt {
-		data = append(data, []string{
-			pe.PortfolioId.String,
-			pe.Name.String,
-			pe.CacheValue.String,
-			pe.GainOfSoldShares.String,
-			pe.Commision.String,
-			pe.Tax.String,
-			pe.GainOfOwnedShares.String,
-			pe.EstimatedGain.String,
-			pe.EstimatedGainCostsInc.String,
+		data = append(data, []interface{}{
+			pe.PortfolioId,
+			pe.Name,
+			pe.CacheValue,
+			pe.GainOfSoldShares,
+			pe.Commision,
+			pe.Tax,
+			pe.GainOfOwnedShares,
+			pe.EstimatedGain,
+			pe.EstimatedGainCostsInc,
 		})
 	}
 

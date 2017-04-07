@@ -1,15 +1,43 @@
 package main
 
 import (
+	"database/sql"
 	"os"
+	"strconv"
 
 	"github.com/olekukonko/tablewriter"
 )
 
-func DrawTable(header []string, data [][]string) {
+func DrawTable(header []string, data [][]interface{}) {
+	newData := make([][]string, len(data))
+	for i, r := range data {
+		newData[i] = make([]string, len(data[i]))
+		for j, e := range r {
+			newData[i][j] = Sprint(e)
+		}
+	}
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader(header)
-	table.AppendBulk(data)
+	table.AppendBulk(newData)
 	table.SetRowLine(true)
 	table.Render()
+}
+
+func Sprint(v interface{}) string {
+	s := ""
+	switch v.(type) {
+	case sql.NullFloat64:
+		s = strconv.FormatFloat(v.(sql.NullFloat64).Float64, 'f', -1, 64)
+	case float64:
+		s = strconv.FormatFloat(v.(float64), 'f', -1, 64)
+	case sql.NullInt64:
+		s = strconv.FormatInt(v.(sql.NullInt64).Int64, 10)
+	case int64:
+		s = strconv.FormatInt(v.(int64), 10)
+	case string:
+		s = v.(string)
+	}
+
+	return s
 }

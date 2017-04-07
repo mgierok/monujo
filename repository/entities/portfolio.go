@@ -5,24 +5,24 @@ import (
 )
 
 type Portfolio struct {
-	PortfolioId sql.NullString `db:"portfolio_id"`
-	Name        sql.NullString `db:"name"`
-	Currency    sql.NullString `db:"currency"`
+	PortfolioId int64  `db:"portfolio_id"`
+	Name        string `db:"name"`
+	Currency    string `db:"currency"`
 }
 
 type Portfolios []Portfolio
 
 type PortfolioExt struct {
 	Portfolio
-	CacheValue            sql.NullString `db:"cache_value"`
-	Outgoings             sql.NullString `db:"outgoings"`
-	Incomings             sql.NullString `db:"incomings"`
-	GainOfSoldShares      sql.NullString `db:"gain_of_sold_shares"`
-	Commision             sql.NullString `db:"commision"`
-	Tax                   sql.NullString `db:"tax"`
-	GainOfOwnedShares     sql.NullString `db:"gain_of_owned_shares"`
-	EstimatedGain         sql.NullString `db:"estimated_gain"`
-	EstimatedGainCostsInc sql.NullString `db:"estimated_gain_costs_inc"`
+	CacheValue            sql.NullFloat64 `db:"cache_value"`
+	Outgoings             sql.NullFloat64 `db:"outgoings"`
+	Incomings             sql.NullFloat64 `db:"incomings"`
+	GainOfSoldShares      sql.NullFloat64 `db:"gain_of_sold_shares"`
+	Commision             sql.NullFloat64 `db:"commision"`
+	Tax                   sql.NullFloat64 `db:"tax"`
+	GainOfOwnedShares     sql.NullFloat64 `db:"gain_of_owned_shares"`
+	EstimatedGain         sql.NullFloat64 `db:"estimated_gain"`
+	EstimatedGainCostsInc sql.NullFloat64 `db:"estimated_gain_costs_inc"`
 }
 
 type PortfoliosExt []PortfolioExt
