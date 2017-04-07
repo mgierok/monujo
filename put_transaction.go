@@ -13,16 +13,16 @@ import (
 func PutTransaction() {
 
 	var t entities.Transaction
-	t.PortfolioId = portfolioId()
-	t.Date = date()
-	t.Ticker = ticker()
-	t.Price = price()
-	t.TransactionOperationType = transactionOperationType()
-	t.Currency = currency()
-	t.Shares = shares()
-	t.Commision = commision()
-	t.ExchangeRate = exchangeRate()
-	t.Tax = tax()
+	get(portfolioId, &t)
+	get(date, &t)
+	get(ticker, &t)
+	get(price, &t)
+	get(transactionOperationType, &t)
+	get(currency, &t)
+	get(shares, &t)
+	get(commision, &t)
+	get(exchangeRate, &t)
+	get(tax, &t)
 
 	summary := [][]string{
 		[]string{"Portfolio ID", strconv.FormatInt(t.PortfolioId, 10)},
@@ -44,7 +44,11 @@ func PutTransaction() {
 	fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
 }
 
-func portfolioId() int64 {
+func get(f func(*entities.Transaction), t *entities.Transaction) {
+	f(t)
+}
+
+func portfolioId(e *entities.Transaction) {
 	fmt.Println("Choose portfolio")
 	fmt.Println("")
 
@@ -75,19 +79,21 @@ func portfolioId() int64 {
 
 	if nil != err {
 		fmt.Printf("\n%sd is not a valid portfolio ID\n\n", input)
-		return portfolioId()
-	}
-
-	_, exists := dict[p]
-	if exists {
-		return p
+		get(portfolioId, e)
+		return
 	} else {
-		fmt.Printf("\n%d is not a valid portfolio ID\n\n", p)
-		return portfolioId()
+		_, exists := dict[p]
+		if exists {
+			e.PortfolioId = p
+		} else {
+			fmt.Printf("\n%d is not a valid portfolio ID\n\n", p)
+			get(portfolioId, e)
+			return
+		}
 	}
 }
 
-func date() string {
+func date(e *entities.Transaction) {
 	const layout = "2006-01-02"
 	var now = time.Now().Format(layout)
 	var d string
@@ -103,27 +109,29 @@ func date() string {
 		if err != nil {
 			fmt.Println(err)
 			fmt.Printf("\n%q is not a valid date format\n\n", d)
-			d = date()
+			get(date, e)
+			return
 		}
 	}
 
-	return d
+	e.Date = d
 }
 
-func ticker() string {
+func ticker(e *entities.Transaction) {
 	fmt.Print("Ticker: ")
 	var t string
 	fmt.Scanln(&t)
 
 	t = strings.Trim(t, " ")
 	if t == "" {
-		return ticker()
+		get(ticker, e)
+		return
 	}
 
-	return strings.ToUpper(t)
+	e.Ticker = strings.ToUpper(t)
 }
 
-func price() float64 {
+func price(e *entities.Transaction) {
 	fmt.Print("Price: ")
 	var input string
 	fmt.Scanln(&input)
@@ -132,13 +140,14 @@ func price() float64 {
 
 	if err != nil {
 		fmt.Printf("\n%s is not a valid price value\n\n", input)
-		return price()
+		get(price, e)
+		return
 	}
 
-	return p
+	e.Price = p
 }
 
-func transactionOperationType() string {
+func transactionOperationType(e *entities.Transaction) {
 	fmt.Println("Choose type of transaction")
 	fmt.Println("")
 
@@ -165,14 +174,15 @@ func transactionOperationType() string {
 
 	_, exists := dict[ot]
 	if exists {
-		return ot
+		e.TransactionOperationType = ot
 	} else {
 		fmt.Printf("\n%s is not a valid transaction type\n\n", ot)
-		return transactionOperationType()
+		get(transactionOperationType, e)
+		return
 	}
 }
 
-func currency() string {
+func currency(e *entities.Transaction) {
 	fmt.Println("Choose currency")
 	fmt.Println("")
 
@@ -201,14 +211,15 @@ func currency() string {
 
 	_, exists := dict[c]
 	if exists {
-		return c
+		e.Currency = c
 	} else {
 		fmt.Printf("\n%s is not a valid currency\n\n", c)
-		return currency()
+		get(currency, e)
+		return
 	}
 }
 
-func shares() float64 {
+func shares(e *entities.Transaction) {
 	fmt.Print("Number of shares: ")
 	var input string
 	fmt.Scanln(&input)
@@ -217,13 +228,14 @@ func shares() float64 {
 
 	if err != nil {
 		fmt.Printf("\n%s is not a valid share number value\n\n", input)
-		return shares()
+		get(shares, e)
+		return
 	}
 
-	return s
+	e.Shares = s
 }
 
-func exchangeRate() float64 {
+func exchangeRate(e *entities.Transaction) {
 	fmt.Print("Exchange rate (default: 1):")
 	var input string
 	fmt.Scanln(&input)
@@ -235,14 +247,15 @@ func exchangeRate() float64 {
 	} else {
 		if err != nil {
 			fmt.Printf("\n%s is not a valid exchange rate value\n\n", input)
-			er = exchangeRate()
+			get(exchangeRate, e)
+			return
 		}
 	}
 
-	return er
+	e.ExchangeRate = er
 }
 
-func commision() float64 {
+func commision(e *entities.Transaction) {
 	fmt.Print("Commision (default: 0): ")
 	var input string
 	fmt.Scanln(&input)
@@ -254,14 +267,15 @@ func commision() float64 {
 	} else {
 		if err != nil {
 			fmt.Printf("\n%s is not a valid commision value\n\n", input)
-			c = commision()
+			get(commision, e)
+			return
 		}
 	}
 
-	return c
+	e.Commision = c
 }
 
-func tax() float64 {
+func tax(e *entities.Transaction) {
 	fmt.Print("Tax (default: 0): ")
 	var input string
 	fmt.Scanln(&input)
@@ -273,9 +287,10 @@ func tax() float64 {
 	} else {
 		if err != nil {
 			fmt.Printf("\n%s is not a valid tax value\n\n", input)
-			t = tax()
+			get(tax, e)
+			return
 		}
 	}
 
-	return t
+	e.Tax = t
 }
