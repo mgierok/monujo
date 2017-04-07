@@ -17,6 +17,7 @@ func main() {
 
 	var action int
 	fmt.Scanln(&action)
+	Clear()
 
 	db := GetDbConnection()
 	repository.SetDb(db)
