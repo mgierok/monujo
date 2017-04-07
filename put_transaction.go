@@ -24,19 +24,7 @@ func PutTransaction() {
 	get(exchangeRate, &t)
 	get(tax, &t)
 
-	summary := [][]string{
-		[]string{"Portfolio ID", strconv.FormatInt(t.PortfolioId, 10)},
-		[]string{"Date", t.Date},
-		[]string{"Ticker", t.Ticker},
-		[]string{"Price", strconv.FormatFloat(t.Price, 'f', -1, 64)},
-		[]string{"Type", t.TransactionOperationType},
-		[]string{"Currency", t.Currency},
-		[]string{"Shares", strconv.FormatFloat(t.Shares, 'f', -1, 64)},
-		[]string{"Commision", strconv.FormatFloat(t.Commision, 'f', -1, 64)},
-		[]string{"Exchange Rate", strconv.FormatFloat(t.ExchangeRate, 'f', -1, 64)},
-		[]string{"Tax", strconv.FormatFloat(t.Tax, 'f', -1, 64)},
-	}
-	DrawTable([]string{}, summary)
+	DrawTable([]string{}, t.DisplayableArray())
 
 	transactionId, err := repository.StoreTransaction(t)
 	LogError(err)
