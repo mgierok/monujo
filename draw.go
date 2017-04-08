@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -43,4 +44,10 @@ func Sprint(v interface{}) string {
 	}
 
 	return s
+}
+
+func Clear() {
+	cmd := exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 }
