@@ -97,26 +97,26 @@ func portfolioId(e *entities.Transaction) {
 
 func date(e *entities.Transaction) {
 	const layout = "2006-01-02"
-	var now = time.Now().Format(layout)
-	var d string
+	now := time.Now()
+	var input string
 
-	fmt.Printf("Date (default: %q): ", now)
-	fmt.Scanln(&d)
+	fmt.Printf("Date (default: %q): ", now.Format(layout))
+	fmt.Scanln(&input)
+	input = strings.Trim(input, " ")
 
-	d = strings.Trim(d, " ")
-	if d == "" {
-		d = now
+	if input == "" {
+		e.Date = now
 	} else {
-		_, err := time.Parse(layout, d)
+		t, err := time.Parse(layout, input)
 		if err != nil {
 			fmt.Println(err)
-			fmt.Printf("\n%q is not a valid date format\n\n", d)
+			fmt.Printf("\n%q is not a valid date format\n\n", input)
 			get(date, e)
 			return
+		} else {
+			e.Date = t
 		}
 	}
-
-	e.Date = d
 }
 
 func ticker(e *entities.Transaction) {
