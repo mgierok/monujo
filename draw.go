@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -35,6 +36,8 @@ func Sprint(v interface{}) string {
 		s = strconv.FormatInt(v.(sql.NullInt64).Int64, 10)
 	case int64:
 		s = strconv.FormatInt(v.(int64), 10)
+	case time.Time:
+		s = v.(time.Time).Format("2006-01-02")
 	case string:
 		s = v.(string)
 	}
