@@ -38,16 +38,6 @@ CREATE TYPE financing_operation AS ENUM (
 
 
 --
--- Name: transaction_operation_type; Type: TYPE; Schema: public; Owner: -
---
-
-CREATE TYPE transaction_operation_type AS ENUM (
-    'buy',
-    'sell'
-);
-
-
---
 -- Name: latest_quotes_before_insert(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -84,44 +74,46 @@ CREATE FUNCTION transactions_after_insert() RETURNS trigger
     AS $$
 DECLARE
 	v_shares transactions.shares%TYPE;
-	v_remaining_shares remaining_shares.shares%TYPE;
-	v_transaction_id remaining_shares.transaction_id%TYPE;
+	v_remaining_shares transactions.shares%TYPE;
+	v_transaction_id disposals.in_transaction_id%TYPE;
 	
 	BEGIN
-		IF NEW."type" = 'sell'::transaction_operation_type THEN
+		SELECT SUM(t.shares) - SUM(COALESCE(d.disposed_shares, 0)) INTO v_remaining_shares
+		FROM transactions t
+		LEFT JOIN (SELECT in_transaction_id, SUM(disposed_shares) disposed_shares FROM disposals GROUP BY in_transaction_id) d ON d.in_transaction_id = t.transaction_id
+		WHERE t.portfolio_id = NEW."portfolio_id" AND t.ticker = NEW."ticker" AND t.transaction_id != NEW.transaction_id
+		GROUP BY t.ticker
+		HAVING (SUM(t.shares) - SUM(COALESCE(d.disposed_shares, 0))) <> 0;
 
-			SELECT SUM(t.shares) - SUM(COALESCE(d.disposed_shares, 0))  INTO v_remaining_shares
-			FROM transactions t
-			LEFT JOIN (SELECT buy_transaction_id, SUM(disposed_shares) disposed_shares FROM disposals GROUP BY buy_transaction_id) d ON d.buy_transaction_id = t.transaction_id
-			WHERE t.portfolio_id = NEW."portfolio_id" AND t.ticker = NEW."ticker" AND t.type = 'buy'::transaction_operation_type 
-			GROUP BY t.ticker
-			HAVING (SUM(t.shares) - SUM(COALESCE(d.disposed_shares, 0))) > 0;
+		IF NOT FOUND THEN
+			RETURN NEW;
+		END IF;
 
-			IF NOT FOUND THEN
-				RAISE EXCEPTION 'You have no shares of % in your portfolio!', NEW."ticker";
-			END IF;
+		IF (v_remaining_shares * NEW.shares < 0) THEN -- have different sign
+			v_shares := NEW."shares";
 
-			IF v_remaining_shares < NEW."shares" THEN
-				RAISE EXCEPTION 'You have only % shares of % in your portfolio!', v_remaining_shares, NEW."ticker";
-			END IF;
-
-			v_shares := NEW."shares";	
-			WHILE v_shares > 0 LOOP
+			WHILE v_shares <> 0 LOOP
 				SELECT t.shares - SUM(COALESCE(d.disposed_shares, 0)), t.transaction_id INTO v_remaining_shares, v_transaction_id
 				FROM transactions t
-				LEFT JOIN disposals d ON t.transaction_id = d.buy_transaction_id
-				WHERE t.portfolio_id = NEW."portfolio_id" AND t.ticker = NEW."ticker" AND t.type = 'buy'::transaction_operation_type
+				LEFT JOIN disposals d ON t.transaction_id = d.in_transaction_id
+				WHERE t.portfolio_id = NEW."portfolio_id" AND t.ticker = NEW."ticker" AND t.transaction_id != NEW.transaction_id
 				GROUP BY t.transaction_id, t.shares, t."date"
-				HAVING (t.shares - SUM(COALESCE(d.disposed_shares, 0))) > 0
+				HAVING (t.shares - SUM(COALESCE(d.disposed_shares, 0))) <> 0
 				ORDER BY t."date" ASC, t.transaction_id ASC
 				LIMIT 1;
 
-				IF v_remaining_shares >= v_shares THEN
-					INSERT INTO disposals (buy_transaction_id, sell_transaction_id, disposed_shares) VALUES (v_transaction_id, NEW."transaction_id", v_shares);
+				IF NOT FOUND THEN
+					RETURN NEW;
+				END IF;
+
+				IF ABS(v_remaining_shares) >= ABS(v_shares) THEN
+					INSERT INTO disposals (in_transaction_id, out_transaction_id, disposed_shares, disposed) VALUES (v_transaction_id, NEW."transaction_id", v_shares * -1, true);
+					INSERT INTO disposals (in_transaction_id, out_transaction_id, disposed_shares, disposed) VALUES (NEW."transaction_id", v_transaction_id, v_shares, false);
 					v_shares := 0;
 				ELSE
-					INSERT INTO disposals (buy_transaction_id, sell_transaction_id, disposed_shares) VALUES (v_transaction_id, NEW."transaction_id", v_remaining_shares);
-					v_shares := v_shares - v_remaining_shares;
+					INSERT INTO disposals (in_transaction_id, out_transaction_id, disposed_shares, disposed) VALUES (v_transaction_id, NEW."transaction_id", v_remaining_shares, true);
+					INSERT INTO disposals (in_transaction_id, out_transaction_id, disposed_shares, disposed) VALUES (NEW."transaction_id", v_transaction_id, v_remaining_shares * -1, false);
+					v_shares := v_shares + v_remaining_shares;
 				END IF;
 			END LOOP;
 		END IF;
@@ -148,9 +140,10 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE disposals (
-    buy_transaction_id integer NOT NULL,
-    sell_transaction_id integer NOT NULL,
-    disposed_shares numeric NOT NULL
+    in_transaction_id integer NOT NULL,
+    out_transaction_id integer NOT NULL,
+    disposed_shares numeric NOT NULL,
+    disposed boolean NOT NULL
 );
 
 
@@ -226,42 +219,6 @@ CREATE TABLE portfolios (
 
 
 --
--- Name: transactions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE transactions (
-    transaction_id integer NOT NULL,
-    portfolio_id integer NOT NULL,
-    date date NOT NULL,
-    ticker character(12) NOT NULL,
-    price numeric NOT NULL,
-    type transaction_operation_type NOT NULL,
-    currency currency NOT NULL,
-    shares numeric NOT NULL,
-    commision numeric NOT NULL,
-    exchange_rate numeric NOT NULL,
-    tax numeric DEFAULT 0 NOT NULL,
-    CONSTRAINT transactions_commision_check CHECK (((commision)::double precision >= (0)::double precision)),
-    CONSTRAINT transactions_exchange_rate_check CHECK (((exchange_rate)::double precision > (0)::double precision)),
-    CONSTRAINT transactions_price_check CHECK (((price)::double precision > (0)::double precision)),
-    CONSTRAINT transactions_shares_check CHECK (((shares)::double precision > (0)::double precision))
-);
-
-
---
--- Name: remaining_shares; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW remaining_shares AS
- SELECT t.transaction_id,
-    (t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) AS shares
-   FROM (transactions t
-     LEFT JOIN disposals d ON ((t.transaction_id = d.buy_transaction_id)))
-  WHERE (t.type = 'buy'::transaction_operation_type)
-  GROUP BY t.transaction_id, t.shares;
-
-
---
 -- Name: securities; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -274,61 +231,96 @@ CREATE TABLE securities (
 
 
 --
+-- Name: transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE transactions (
+    transaction_id integer NOT NULL,
+    portfolio_id integer NOT NULL,
+    date date NOT NULL,
+    ticker character(12) NOT NULL,
+    price numeric NOT NULL,
+    currency currency NOT NULL,
+    shares numeric NOT NULL,
+    commision numeric NOT NULL,
+    exchange_rate numeric NOT NULL,
+    tax numeric DEFAULT 0 NOT NULL,
+    CONSTRAINT transactions_commision_check CHECK ((commision >= (0)::numeric)),
+    CONSTRAINT transactions_exchange_rate_check CHECK ((exchange_rate > (0)::numeric)),
+    CONSTRAINT transactions_price_check CHECK ((price > (0)::numeric)),
+    CONSTRAINT transactions_shares_check CHECK ((shares <> (0)::numeric))
+);
+
+
+--
 -- Name: owned_stocks; Type: VIEW; Schema: public; Owner: -
 --
 
 CREATE VIEW owned_stocks AS
- SELECT t.portfolio_id,
+ WITH remaining_shares AS (
+         SELECT t.transaction_id,
+            (t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) AS shares
+           FROM (transactions t
+             LEFT JOIN disposals d ON ((t.transaction_id = d.in_transaction_id)))
+          GROUP BY t.transaction_id, t.shares
+         HAVING ((t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) <> (0)::numeric)
+        ), owned_shares AS (
+         SELECT t.portfolio_id,
+            t.ticker,
+            t.currency,
+            sum(rs.shares) AS shares,
+            sum((rs.shares * t.price)) AS expenditure,
+            sum(((rs.shares * t.price) * t.exchange_rate)) AS expenditure_base_currency,
+            (sum((rs.shares * t.price)) / sum(rs.shares)) AS average_price,
+            (sum(((rs.shares * t.price) * t.exchange_rate)) / sum(rs.shares)) AS average_price_base_currency
+           FROM transactions t,
+            remaining_shares rs
+          WHERE (rs.transaction_id = t.transaction_id)
+          GROUP BY t.portfolio_id, t.ticker, t.currency
+        )
+ SELECT p.portfolio_id,
     p.name AS portfolio_name,
-    t.ticker,
+    os.ticker,
     s.short_name,
-    s.full_name,
     s.market,
-    sum(rs.shares) AS shares,
+    os.shares,
     q.close AS last_price,
-    round((sum(rs.shares) * q.close), 2) AS market_value,
-    t.currency,
+    round((os.shares * q.close), 2) AS market_value,
+    os.currency,
         CASE
-            WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
+            WHEN (os.currency = p.currency) THEN (1)::numeric
             ELSE e.close
         END AS exchange_rate,
     (q.close *
         CASE
-            WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
+            WHEN (os.currency = p.currency) THEN (1)::numeric
             ELSE e.close
         END) AS last_price_base_currency,
-    round(((sum(rs.shares) * q.close) *
+    round(((os.shares * q.close) *
         CASE
-            WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
+            WHEN (os.currency = p.currency) THEN (1)::numeric
             ELSE e.close
         END)) AS market_value_base_currency,
-    round((sum((rs.shares * t.price)) / sum(rs.shares)), 2) AS average_price,
-    round((sum(((rs.shares * t.price) * t.exchange_rate)) / sum(rs.shares)), 2) AS average_price_base_currency,
-    round(((sum(rs.shares) * q.close) - sum((rs.shares * t.price))), 2) AS gain,
-    round(((((sum(rs.shares) * q.close) - sum((rs.shares * t.price))) / sum((rs.shares * t.price))) * (100)::numeric), 2) AS percentage_gain,
-    round((((sum(rs.shares) * q.close) *
+    round(os.average_price, 2) AS average_price,
+    round(os.average_price_base_currency, 2) AS average_price_base_currency,
+    round(((os.shares * q.close) - os.expenditure), 2) AS gain,
+    round(((((os.shares * q.close) - os.expenditure) / os.expenditure) * (100)::numeric), 2) AS percentage_gain,
+    round((((os.shares * q.close) *
         CASE
-            WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
+            WHEN (os.currency = p.currency) THEN (1)::numeric
             ELSE e.close
-        END) - sum(((rs.shares * t.price) * t.exchange_rate))), 2) AS gain_base_currency,
-    round((((((sum(rs.shares) * q.close) *
+        END) - os.expenditure_base_currency), 2) AS gain_base_currency,
+    round((((((os.shares * q.close) *
         CASE
-            WHEN (t.currency = p.currency) THEN ((1)::real)::numeric
+            WHEN (os.currency = p.currency) THEN (1)::numeric
             ELSE e.close
-        END) - sum(((rs.shares * t.price) * t.exchange_rate))) / sum(((rs.shares * t.price) * t.exchange_rate))) * (100)::numeric), 2) AS percentage_gain_base_currency
-   FROM (((((transactions t
-     JOIN portfolios p ON ((t.portfolio_id = p.portfolio_id)))
-     LEFT JOIN securities s ON ((t.ticker = s.ticker)))
-     LEFT JOIN latest_quotes q ON ((t.ticker = q.ticker)))
-     LEFT JOIN latest_quotes e ON ((((e.ticker)::text = ((t.currency)::text || (p.currency)::text)) AND (t.currency <> p.currency))))
-     LEFT JOIN remaining_shares rs ON ((rs.transaction_id = t.transaction_id)))
-  GROUP BY t.portfolio_id, p.name, t.ticker, s.short_name, s.full_name, s.market, q.close, t.currency, e.close, p.currency
- HAVING (sum(
-        CASE
-            WHEN (t.type = 'sell'::transaction_operation_type) THEN (t.shares * ((-1))::numeric)
-            ELSE t.shares
-        END) > (0)::numeric)
-  ORDER BY t.portfolio_id;
+        END) - os.expenditure_base_currency) / os.expenditure_base_currency) * (100)::numeric), 2) AS percentage_gain_base_currency
+   FROM ((((owned_shares os
+     JOIN portfolios p ON ((os.portfolio_id = p.portfolio_id)))
+     LEFT JOIN securities s ON ((os.ticker = s.ticker)))
+     LEFT JOIN latest_quotes q ON ((os.ticker = q.ticker)))
+     LEFT JOIN latest_quotes e ON ((((e.ticker)::text = ((os.currency)::text || (p.currency)::text)) AND (os.currency <> p.currency))))
+  ORDER BY p.portfolio_id;
 
 
 --
@@ -336,54 +328,67 @@ CREATE VIEW owned_stocks AS
 --
 
 CREATE VIEW portfolios_ext AS
- SELECT p.portfolio_id,
-    p.name,
-    p.currency,
-    (fo.cache_value - t.invested_value) AS cache_value,
-    "out".outgoings,
-    "in".incomings,
-    ("in".incomings - "out".outgoings) AS gain_of_sold_shares,
-    ("in".commision + "out".commision) AS commision,
-    ("in".tax + "out".tax) AS tax,
-    os.gain_of_owned_shares,
-    (COALESCE(("in".incomings - "out".outgoings), (0)::numeric) + COALESCE(os.gain_of_owned_shares, (0)::numeric)) AS estimated_gain,
-    (((COALESCE(("in".incomings - "out".outgoings), (0)::numeric) + COALESCE(os.gain_of_owned_shares, (0)::numeric)) - COALESCE(("in".tax + "out".tax), (0)::numeric)) - COALESCE(("in".commision + "out".commision), (0)::numeric)) AS estimated_gain_costs_inc
-   FROM (((((portfolios p
-     LEFT JOIN ( SELECT o.portfolio_id,
+ WITH cache AS (
+         SELECT o.portfolio_id,
             round(sum((o.value * (
                 CASE
                     WHEN (o.type = 'withdraw'::financing_operation) THEN (-1)
                     ELSE 1
-                END)::numeric)), 2) AS cache_value
+                END)::numeric)), 2) AS value
            FROM operations o
-          GROUP BY o.portfolio_id) fo ON ((fo.portfolio_id = p.portfolio_id)))
-     LEFT JOIN ( SELECT t_1.portfolio_id,
-            round(sum((t_1.commision + (((t_1.shares * t_1.price) * t_1.exchange_rate) * (
-                CASE
-                    WHEN (t_1.type = 'buy'::transaction_operation_type) THEN 1
-                    ELSE (-1)
-                END)::numeric))), 2) AS invested_value
-           FROM transactions t_1
-          GROUP BY t_1.portfolio_id) t ON ((t.portfolio_id = p.portfolio_id)))
-     LEFT JOIN ( SELECT t_1.portfolio_id,
-            round(sum((((t_1.shares - rs.shares) * t_1.price) * t_1.exchange_rate)), 2) AS outgoings,
-            sum(t_1.commision) AS commision,
-            sum(t_1.tax) AS tax
-           FROM (transactions t_1
-             LEFT JOIN remaining_shares rs ON ((t_1.transaction_id = rs.transaction_id)))
-          WHERE ((t_1.shares - rs.shares) > (0)::numeric)
-          GROUP BY t_1.portfolio_id) "out" ON (("out".portfolio_id = p.portfolio_id)))
-     LEFT JOIN ( SELECT t_1.portfolio_id,
-            round(sum(((t_1.shares * t_1.price) * t_1.exchange_rate)), 2) AS incomings,
-            sum(t_1.commision) AS commision,
-            sum(t_1.tax) AS tax
-           FROM transactions t_1
-          WHERE (t_1.type = 'sell'::transaction_operation_type)
-          GROUP BY t_1.portfolio_id) "in" ON (("in".portfolio_id = p.portfolio_id)))
-     LEFT JOIN ( SELECT s.portfolio_id,
-            sum(s.gain_base_currency) AS gain_of_owned_shares
+          GROUP BY o.portfolio_id
+        ), invested AS (
+         SELECT t.portfolio_id,
+            round(sum((t.commision + ((t.shares * t.price) * t.exchange_rate))), 2) AS value
+           FROM transactions t
+          GROUP BY t.portfolio_id
+        ), remaining AS (
+         SELECT t.transaction_id,
+            (t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) AS shares
+           FROM (transactions t
+             LEFT JOIN disposals d ON ((t.transaction_id = d.in_transaction_id)))
+          GROUP BY t.transaction_id, t.shares
+        ), outgoings AS (
+         SELECT t.portfolio_id,
+            round(sum((((t.shares - r.shares) * t.price) * t.exchange_rate)), 2) AS value,
+            sum(t.commision) AS commision,
+            sum(t.tax) AS tax
+           FROM (transactions t
+             LEFT JOIN remaining r ON ((t.transaction_id = r.transaction_id)))
+          WHERE (t.shares > (0)::numeric)
+          GROUP BY t.portfolio_id
+        ), incomings AS (
+         SELECT t.portfolio_id,
+            ((0)::numeric - round(sum(((t.shares * t.price) * t.exchange_rate)), 2)) AS value,
+            sum(t.commision) AS commision,
+            sum(t.tax) AS tax
+           FROM transactions t
+          WHERE (t.shares < (0)::numeric)
+          GROUP BY t.portfolio_id
+        ), gain_of_owned_shares AS (
+         SELECT s.portfolio_id,
+            sum(s.gain_base_currency) AS value
            FROM owned_stocks s
-          GROUP BY s.portfolio_id) os ON ((os.portfolio_id = p.portfolio_id)));
+          GROUP BY s.portfolio_id
+        )
+ SELECT p.portfolio_id,
+    p.name,
+    p.currency,
+    (c.value - i.value) AS cache_value,
+    "out".value AS outgoings,
+    "in".value AS incomings,
+    ("in".value - "out".value) AS gain_of_sold_shares,
+    ("in".commision + "out".commision) AS commision,
+    ("in".tax + "out".tax) AS tax,
+    gos.value AS gain_of_owned_shares,
+    (COALESCE(("in".value - "out".value), (0)::numeric) + COALESCE(gos.value, (0)::numeric)) AS estimated_gain,
+    (((COALESCE(("in".value - "out".value), (0)::numeric) + COALESCE(gos.value, (0)::numeric)) - COALESCE(("in".tax + "out".tax), (0)::numeric)) - COALESCE(("in".commision + "out".commision), (0)::numeric)) AS estimated_gain_costs_inc
+   FROM (((((portfolios p
+     LEFT JOIN cache c ON ((c.portfolio_id = p.portfolio_id)))
+     LEFT JOIN invested i ON ((i.portfolio_id = p.portfolio_id)))
+     LEFT JOIN outgoings "out" ON (("out".portfolio_id = p.portfolio_id)))
+     LEFT JOIN incomings "in" ON (("in".portfolio_id = p.portfolio_id)))
+     LEFT JOIN gain_of_owned_shares gos ON ((gos.portfolio_id = p.portfolio_id)));
 
 
 --
@@ -419,17 +424,6 @@ CREATE TABLE quotes (
     volume bigint,
     openint bigint
 );
-
-
---
--- Name: transactional_operation_types; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW transactional_operation_types AS
- SELECT e.enumlabel AS type
-   FROM (pg_type t
-     JOIN pg_enum e ON ((t.oid = e.enumtypid)))
-  WHERE (t.typname = 'transaction_operation_type'::name);
 
 
 --
@@ -477,7 +471,7 @@ ALTER TABLE ONLY transactions ALTER COLUMN transaction_id SET DEFAULT nextval('t
 --
 
 ALTER TABLE ONLY disposals
-    ADD CONSTRAINT disposals_pkey PRIMARY KEY (buy_transaction_id, sell_transaction_id);
+    ADD CONSTRAINT disposals_pkey PRIMARY KEY (in_transaction_id, out_transaction_id);
 
 
 --
@@ -529,13 +523,6 @@ ALTER TABLE ONLY transactions
 
 
 --
--- Name: disposals_sell_transaction_id_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX disposals_sell_transaction_id_idx ON disposals USING btree (sell_transaction_id);
-
-
---
 -- Name: latest_quotes_before_insert_trigger; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -550,26 +537,26 @@ CREATE TRIGGER quotes_before_insert_trigger BEFORE INSERT ON quotes FOR EACH ROW
 
 
 --
--- Name: transactions_after_insert_trigger; Type: TRIGGER; Schema: public; Owner: -
+-- Name: transactions_after_insert; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER transactions_after_insert_trigger AFTER INSERT ON transactions FOR EACH ROW EXECUTE PROCEDURE transactions_after_insert();
-
-
---
--- Name: disposals_buy_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY disposals
-    ADD CONSTRAINT disposals_buy_transaction_id_fkey FOREIGN KEY (buy_transaction_id) REFERENCES transactions(transaction_id) ON UPDATE CASCADE ON DELETE CASCADE;
+CREATE TRIGGER transactions_after_insert AFTER INSERT ON transactions FOR EACH ROW EXECUTE PROCEDURE transactions_after_insert();
 
 
 --
--- Name: disposals_sell_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: disposals_in_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY disposals
-    ADD CONSTRAINT disposals_sell_transaction_id_fkey FOREIGN KEY (sell_transaction_id) REFERENCES transactions(transaction_id) ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT disposals_in_transaction_id_fkey FOREIGN KEY (in_transaction_id) REFERENCES transactions(transaction_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: disposals_out_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY disposals
+    ADD CONSTRAINT disposals_out_transaction_id_fkey FOREIGN KEY (out_transaction_id) REFERENCES transactions(transaction_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -585,7 +572,7 @@ ALTER TABLE ONLY operations
 --
 
 ALTER TABLE ONLY transactions
-    ADD CONSTRAINT transactions_portfolio_id_fkey FOREIGN KEY (portfolio_id) REFERENCES portfolios(portfolio_id);
+    ADD CONSTRAINT transactions_portfolio_id_fkey FOREIGN KEY (portfolio_id) REFERENCES portfolios(portfolio_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 
 --

@@ -17,7 +17,6 @@ func PutTransaction() {
 	get(date, &t)
 	get(ticker, &t)
 	get(price, &t)
-	get(transactionOperationType, &t)
 	get(currency, &t)
 	get(shares, &t)
 	get(commision, &t)
@@ -29,7 +28,6 @@ func PutTransaction() {
 		[]interface{}{"Date", t.Date},
 		[]interface{}{"Ticker", t.Ticker},
 		[]interface{}{"Price", t.Price},
-		[]interface{}{"Type", t.TransactionOperationType},
 		[]interface{}{"Currency", t.Currency},
 		[]interface{}{"Shares", t.Shares},
 		[]interface{}{"Commision", t.Commision},
@@ -147,41 +145,6 @@ func price(e *entities.Transaction) {
 	}
 
 	e.Price = p
-}
-
-func transactionOperationType(e *entities.Transaction) {
-	fmt.Println("Choose type of transaction")
-	fmt.Println("")
-
-	operationTypes, err := repository.TransactionalOperationTypes()
-	LogError(err)
-
-	header := []string{
-		"Transaction Type",
-	}
-
-	var dict = make(map[string]string)
-	var data [][]interface{}
-	for _, ot := range operationTypes {
-		dict[ot.Type] = ot.Type
-		data = append(data, []interface{}{ot.Type})
-	}
-
-	DrawTable(header, data)
-	fmt.Println("")
-
-	var ot string
-	fmt.Print("Transaction type: ")
-	fmt.Scanln(&ot)
-
-	_, exists := dict[ot]
-	if exists {
-		e.TransactionOperationType = ot
-	} else {
-		fmt.Printf("\n%s is not a valid transaction type\n\n", ot)
-		get(transactionOperationType, e)
-		return
-	}
 }
 
 func currency(e *entities.Transaction) {

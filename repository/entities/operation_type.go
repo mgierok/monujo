@@ -6,12 +6,6 @@ type OperationType struct {
 
 type OperationTypes []OperationType
 
-type TransactionalOperationType struct {
-	OperationType
-}
-
-type TransactionalOperationTypes []TransactionalOperationType
-
 type FinancialOperationType struct {
 	OperationType
 }
