@@ -30,11 +30,15 @@ func Sprint(v interface{}) string {
 	s := ""
 	switch v.(type) {
 	case sql.NullFloat64:
-		s = strconv.FormatFloat(v.(sql.NullFloat64).Float64, 'f', -1, 64)
+		if vv := v.(sql.NullFloat64); vv.Valid {
+			s = strconv.FormatFloat(vv.Float64, 'f', -1, 64)
+		}
 	case float64:
 		s = strconv.FormatFloat(v.(float64), 'f', -1, 64)
 	case sql.NullInt64:
-		s = strconv.FormatInt(v.(sql.NullInt64).Int64, 10)
+		if vv := v.(sql.NullInt64); vv.Valid {
+			s = strconv.FormatInt(vv.Int64, 10)
+		}
 	case int64:
 		s = strconv.FormatInt(v.(int64), 10)
 	case time.Time:
