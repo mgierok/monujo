@@ -37,11 +37,31 @@ func PutTransaction() {
 
 	Clear()
 	DrawTable([]string{}, summary)
+	fmt.Println("")
 
-	transactionId, err := repository.StoreTransaction(t)
-	LogError(err)
+	if confirm() {
+		transactionId, err := repository.StoreTransaction(t)
+		LogError(err)
 
-	fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
+		fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
+	} else {
+		fmt.Println("Transaction has not been recorded")
+	}
+}
+
+func confirm() bool {
+	var input string
+	fmt.Println("Type 'Y' to insert or 'N' to abort")
+	fmt.Scanln(&input)
+	input = strings.ToUpper(input)
+
+	if "Y" == input {
+		return true
+	} else if "N" == input {
+		return false
+	}
+
+	return confirm()
 }
 
 func get(f func(*entities.Transaction), t *entities.Transaction) {
