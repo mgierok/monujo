@@ -18,10 +18,8 @@ type OwnedStock struct {
 	PortfolioId                int64           `db:"portfolio_id"`
 	PortfolioName              string          `db:"portfolio_name"`
 	Shares                     float64         `db:"shares"`
-	MarketValue                sql.NullFloat64 `db:"market_value"`
 	ExchangeRate               sql.NullFloat64 `db:"exchange_rate"`
 	LastPriceBaseCurrency      sql.NullFloat64 `db:"last_price_base_currency"`
-	MarketValueBaseCurrency    sql.NullFloat64 `db:"market_value_base_currency"`
 	AveragePrice               float64         `db:"average_price"`
 	AveragePriceBaseCurrency   float64         `db:"average_price_base_currency"`
 	Gain                       sql.NullFloat64 `db:"gain"`

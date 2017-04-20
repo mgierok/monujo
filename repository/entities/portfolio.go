@@ -15,8 +15,6 @@ type Portfolios []Portfolio
 type PortfolioExt struct {
 	Portfolio
 	CacheValue            sql.NullFloat64 `db:"cache_value"`
-	Outgoings             sql.NullFloat64 `db:"outgoings"`
-	Incomings             sql.NullFloat64 `db:"incomings"`
 	GainOfSoldShares      sql.NullFloat64 `db:"gain_of_sold_shares"`
 	Commision             sql.NullFloat64 `db:"commision"`
 	Tax                   sql.NullFloat64 `db:"tax"`
