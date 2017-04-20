@@ -14,11 +14,19 @@ func PutTransaction() {
 
 	var t entities.Transaction
 	get(portfolioId, &t)
+
+	isShort := isShort()
+
 	get(date, &t)
 	get(ticker, &t)
 	get(price, &t)
 	get(currency, &t)
 	get(shares, &t)
+
+	if (isShort && t.Shares > 0) || (!isShort && t.Shares < 0) {
+		t.Shares = 0 - t.Shares
+	}
+
 	get(commision, &t)
 	get(exchangeRate, &t)
 	get(tax, &t)
@@ -111,6 +119,21 @@ func portfolioId(e *entities.Transaction) {
 			return
 		}
 	}
+}
+
+func isShort() bool {
+	var input string
+	fmt.Println("(B)UY or (S)ELL?")
+	fmt.Scanln(&input)
+	input = strings.ToUpper(input)
+
+	if "S" == input {
+		return true
+	} else if "B" == input {
+		return false
+	}
+
+	return isShort()
 }
 
 func date(e *entities.Transaction) {
