@@ -9,6 +9,14 @@ import (
 )
 
 func main() {
+	db := GetDbConnection()
+	repository.SetDb(db)
+	defer db.Close()
+
+	mainMenu()
+}
+
+func mainMenu() {
 	fmt.Println("Choose action")
 	data := [][]interface{}{
 		[]interface{}{"1", "Summary"},
@@ -24,17 +32,26 @@ func main() {
 	action = strings.ToUpper(action)
 	console.Clear()
 
-	db := GetDbConnection()
-	repository.SetDb(db)
-	defer db.Close()
-
 	if action == "1" {
-		Summary()
+		runAction(Summary)
 	} else if action == "2" {
-		PutTransaction()
+		runAction(PutTransaction)
 	} else if action == "3" {
-		Transactions()
+		runAction(Transactions)
 	} else if action == "Q" {
 		return;
+	} else {
+		mainMenu()
 	}
+}
+
+func runAction(f func()) {
+	console.Clear()
+	f()
+
+	// type something to continue TODO how to detect enter key?
+	var input string
+	fmt.Scanln(&input)
+
+	mainMenu()
 }
