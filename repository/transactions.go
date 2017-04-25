@@ -42,3 +42,8 @@ func PortfolioTransactions(portfolio entity.Portfolio) (entity.Transactions, err
 	portfolio.PortfolioId)
 	return transactions, err
 }
+
+func DeleteTransaction(transaction entity.Transaction) (error) {
+	_, err := db.Exec("DELETE FROM transactions WHERE portfolio_id = $1 AND transaction_id = $2", transaction.PortfolioId, transaction.TransactionId)
+	return err
+}
