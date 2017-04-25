@@ -1,4 +1,4 @@
-package entities
+package entity
 
 type OperationType struct {
 	Type string `db:"type"`

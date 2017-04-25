@@ -5,11 +5,13 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/mgierok/monujo/repository"
+	"github.com/mgierok/monujo/console"
+	"github.com/mgierok/monujo/log"
 )
 
 func Summary() {
 	ownedStocks, err := repository.OwnedStocks()
-	LogError(err)
+	log.PanicIfError(err)
 
 	var data [][]interface{}
 
@@ -43,14 +45,14 @@ func Summary() {
 		"Gain BC%",
 	}
 
-	DrawTable(header, data)
+	console.DrawTable(header, data)
 
 	data = data[0:0]
 	fmt.Println("")
 	fmt.Println("")
 
 	portfoliosExt, err := repository.PortfoliosExt()
-	LogError(err)
+	log.PanicIfError(err)
 
 	for _, pe := range portfoliosExt {
 		data = append(data, []interface{}{
@@ -78,5 +80,5 @@ func Summary() {
 		"Estimated Gain Costs Inc.",
 	}
 
-	DrawTable(header, data)
+	console.DrawTable(header, data)
 }

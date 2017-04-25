@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/mgierok/monujo/repository"
+	"github.com/mgierok/monujo/console"
 )
 
 func main() {
@@ -13,11 +14,11 @@ func main() {
 		[]interface{}{"2", "Put transaction"},
 	}
 
-	DrawTable([]string{}, data)
+	console.DrawTable([]string{}, data)
 
 	var action int
 	fmt.Scanln(&action)
-	Clear()
+	console.Clear()
 
 	db := GetDbConnection()
 	repository.SetDb(db)

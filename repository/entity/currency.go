@@ -1,4 +1,4 @@
-package entities
+package entity
 
 type Currency struct {
 	Symbol string `db:"currency"`

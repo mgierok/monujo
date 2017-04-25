@@ -1,10 +1,10 @@
 package repository
 
 import (
-	"github.com/mgierok/monujo/repository/entities"
+	"github.com/mgierok/monujo/repository/entity"
 )
 
-func StoreTransaction(transaction entities.Transaction) (int64, error) {
+func StoreTransaction(transaction entity.Transaction) (int64, error) {
 	stmt, err := Db().PrepareNamed(`
 		INSERT INTO transactions (portfolio_id, date, ticker, price, currency, shares, commision, exchange_rate, tax)
 		VALUES (:portfolio_id, :date, :ticker, :price, :currency, :shares, :commision, :exchange_rate, :tax)

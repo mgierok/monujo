@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"github.com/mgierok/monujo/repository"
-	"github.com/mgierok/monujo/repository/entities"
+	"github.com/mgierok/monujo/console"
+	"github.com/mgierok/monujo/log"
+	"github.com/mgierok/monujo/repository/entity"
 )
 
 func PutTransaction() {
 
-	var t entities.Transaction
+	var t entity.Transaction
 	get(portfolioId, &t)
 
 	isShort := isShort()
@@ -43,13 +45,13 @@ func PutTransaction() {
 		[]interface{}{"Tax", t.Tax},
 	}
 
-	Clear()
-	DrawTable([]string{}, summary)
+	console.Clear()
+	console.DrawTable([]string{}, summary)
 	fmt.Println("")
 
 	if confirm() {
 		transactionId, err := repository.StoreTransaction(t)
-		LogError(err)
+		log.PanicIfError(err)
 
 		fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
 	} else {
@@ -72,17 +74,17 @@ func confirm() bool {
 	return confirm()
 }
 
-func get(f func(*entities.Transaction), t *entities.Transaction) {
-	Clear()
+func get(f func(*entity.Transaction), t *entity.Transaction) {
+	console.Clear()
 	f(t)
 }
 
-func portfolioId(e *entities.Transaction) {
+func portfolioId(e *entity.Transaction) {
 	fmt.Println("Choose portfolio")
 	fmt.Println("")
 
 	portfolios, err := repository.Portfolios()
-	LogError(err)
+	log.PanicIfError(err)
 
 	header := []string{
 		"Portfolio Id",
@@ -96,7 +98,7 @@ func portfolioId(e *entities.Transaction) {
 		dict[p.PortfolioId] = p.Name
 	}
 
-	DrawTable(header, data)
+	console.DrawTable(header, data)
 	fmt.Println("")
 
 	var input string
@@ -136,7 +138,7 @@ func isShort() bool {
 	return isShort()
 }
 
-func date(e *entities.Transaction) {
+func date(e *entity.Transaction) {
 	const layout = "2006-01-02"
 	now := time.Now()
 	var input string
@@ -160,7 +162,7 @@ func date(e *entities.Transaction) {
 	}
 }
 
-func ticker(e *entities.Transaction) {
+func ticker(e *entity.Transaction) {
 	fmt.Print("Ticker: ")
 	var t string
 	fmt.Scanln(&t)
@@ -174,7 +176,7 @@ func ticker(e *entities.Transaction) {
 	e.Ticker = strings.ToUpper(t)
 }
 
-func price(e *entities.Transaction) {
+func price(e *entity.Transaction) {
 	fmt.Print("Price: ")
 	var input string
 	fmt.Scanln(&input)
@@ -190,12 +192,12 @@ func price(e *entities.Transaction) {
 	e.Price = p
 }
 
-func currency(e *entities.Transaction) {
+func currency(e *entity.Transaction) {
 	fmt.Println("Choose currency")
 	fmt.Println("")
 
 	currencies, err := repository.Currencies()
-	LogError(err)
+	log.PanicIfError(err)
 
 	header := []string{
 		"Currency",
@@ -208,7 +210,7 @@ func currency(e *entities.Transaction) {
 		data = append(data, []interface{}{c.Symbol})
 	}
 
-	DrawTable(header, data)
+	console.DrawTable(header, data)
 	fmt.Println("")
 
 	var c string
@@ -227,7 +229,7 @@ func currency(e *entities.Transaction) {
 	}
 }
 
-func shares(e *entities.Transaction) {
+func shares(e *entity.Transaction) {
 	fmt.Print("Number of shares: ")
 	var input string
 	fmt.Scanln(&input)
@@ -243,7 +245,7 @@ func shares(e *entities.Transaction) {
 	e.Shares = s
 }
 
-func exchangeRate(e *entities.Transaction) {
+func exchangeRate(e *entity.Transaction) {
 	fmt.Print("Exchange rate (default: 1):")
 	var input string
 	fmt.Scanln(&input)
@@ -263,7 +265,7 @@ func exchangeRate(e *entities.Transaction) {
 	e.ExchangeRate = er
 }
 
-func commision(e *entities.Transaction) {
+func commision(e *entity.Transaction) {
 	fmt.Print("Commision (default: 0): ")
 	var input string
 	fmt.Scanln(&input)
@@ -283,7 +285,7 @@ func commision(e *entities.Transaction) {
 	e.Commision = c
 }
 
-func tax(e *entities.Transaction) {
+func tax(e *entity.Transaction) {
 	fmt.Print("Tax (default: 0): ")
 	var input string
 	fmt.Scanln(&input)

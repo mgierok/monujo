@@ -1,17 +1,17 @@
 package repository
 
 import (
-	"github.com/mgierok/monujo/repository/entities"
+	"github.com/mgierok/monujo/repository/entity"
 )
 
-func PortfoliosExt() (entities.PortfoliosExt, error) {
-	portfolios := entities.PortfoliosExt{}
+func PortfoliosExt() (entity.PortfoliosExt, error) {
+	portfolios := entity.PortfoliosExt{}
 	err := Db().Select(&portfolios, "SELECT portfolio_id, name, currency, cache_value, gain_of_sold_shares, commision, tax, gain_of_owned_shares, estimated_gain, estimated_gain_costs_inc FROM portfolios_ext")
 	return portfolios, err
 }
 
-func Portfolios() (entities.Portfolios, error) {
-	portfolios := entities.Portfolios{}
+func Portfolios() (entity.Portfolios, error) {
+	portfolios := entity.Portfolios{}
 	err := Db().Select(&portfolios, "SELECT portfolio_id, name, currency FROM portfolios ORDER BY portfolio_id ASC")
 	return portfolios, err
 }
