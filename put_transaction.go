@@ -108,7 +108,7 @@ func portfolioId(e *entity.Transaction) {
 	p, err := strconv.ParseInt(input, 10, 64)
 
 	if nil != err {
-		fmt.Printf("\n%sd is not a valid portfolio ID\n\n", input)
+		fmt.Printf("\n%s is not a valid portfolio ID\n\n", input)
 		get(portfolioId, e)
 		return
 	} else {
