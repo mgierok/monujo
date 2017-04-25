@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"strconv"
 	_ "github.com/lib/pq"
 	"github.com/mgierok/monujo/repository"
@@ -47,6 +48,16 @@ func Transactions() {
 	}
 
 	console.DrawTable(header, data)
+	fmt.Println("")
+
+	if !careToDelete() {
+		return;
+	}
+
+	transaction := transaction(transactions)
+	err = repository.DeleteTransaction(transaction)
+	log.PanicIfError(err)
+	fmt.Println("Transaction has been removed")
 }
 
 func portfolio() entity.Portfolio {
@@ -87,5 +98,42 @@ func portfolio() entity.Portfolio {
 
 		fmt.Printf("\n%s is not a valid portfolio ID\n\n", input)
 		return portfolio()
+	}
+}
+
+func careToDelete() bool {
+	var input string
+	fmt.Println("Type 'Y' to delete one of the transactions or 'N' to abort")
+	fmt.Scanln(&input)
+	input = strings.ToUpper(input)
+
+	if "Y" == input {
+		return true
+	} else if "N" == input {
+		return false
+	}
+
+	return careToDelete()
+}
+
+func transaction(transactions entity.Transactions) entity.Transaction {
+	var input string
+	fmt.Print("Transaction ID: ")
+	fmt.Scanln(&input)
+
+	transactionId, err := strconv.ParseInt(input, 10, 64)
+
+	if nil != err {
+		fmt.Printf("\n%s is not a valid transaction ID\n\n", input)
+		return transaction(transactions)
+	} else {
+		for _, t := range transactions {
+			if t.TransactionId == transactionId {
+				return t
+			}
+		}
+
+		fmt.Printf("\n%s is not a valid transaction ID\n\n", input)
+		return transaction(transactions)
 	}
 }
