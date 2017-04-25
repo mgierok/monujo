@@ -12,6 +12,7 @@ func main() {
 	data := [][]interface{}{
 		[]interface{}{"1", "Summary"},
 		[]interface{}{"2", "Put transaction"},
+		[]interface{}{"3", "List transactions"},
 	}
 
 	console.DrawTable([]string{}, data)
@@ -28,5 +29,7 @@ func main() {
 		Summary()
 	} else if action == 2 {
 		PutTransaction()
+	} else if action == 3 {
+		Transactions()
 	}
 }

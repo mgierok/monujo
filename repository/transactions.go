@@ -18,3 +18,32 @@ func StoreTransaction(transaction entity.Transaction) (int64, error) {
 
 	return transactionId, err
 }
+
+func PortfolioTransactions(portfolio entity.Portfolio) (entity.Transactions, error) {
+	transactions := entity.Transactions{}
+	err := Db().Select(&transactions,
+	`SELECT
+		transaction_id,
+		portfolio_id,
+		date,
+		ticker,
+		price,
+		currency,
+		shares,
+		commision,
+		exchange_rate,
+		tax
+	FROM transactions
+	WHERE portfolio_id = $1
+	ORDER BY
+		date ASC,
+		transaction_id ASC
+	`,
+	portfolio.PortfolioId)
+	return transactions, err
+}
+
+func DeleteTransaction(transaction entity.Transaction) (error) {
+	_, err := db.Exec("DELETE FROM transactions WHERE portfolio_id = $1 AND transaction_id = $2", transaction.PortfolioId, transaction.TransactionId)
+	return err
+}
