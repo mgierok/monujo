@@ -332,15 +332,17 @@ CREATE VIEW portfolios_ext AS
                 CASE
                     WHEN (o.type = 'withdraw'::financing_operation) THEN (-1)
                     ELSE 1
-                END)::numeric)), 2) AS value
+                END)::numeric)), 2) AS value,
+            sum(o.commision) AS commision
            FROM operations o
           GROUP BY o.portfolio_id
         ), expenditure AS (
          SELECT t.portfolio_id,
-            sum(((t.shares * t.price) * t.exchange_rate)) AS value,
+            sum((((t.shares * t.price) * t.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS value,
             sum(t.commision) AS commision,
             sum(t.tax) AS tax
-           FROM transactions t
+           FROM (transactions t
+             LEFT JOIN securities s ON ((s.ticker = t.ticker)))
           GROUP BY t.portfolio_id
         ), gain_of_sold_shares AS (
          SELECT tin.portfolio_id,
@@ -360,7 +362,7 @@ CREATE VIEW portfolios_ext AS
  SELECT p.portfolio_id,
     p.name,
     p.currency,
-    round((((c.value - e.value) - e.commision) - e.tax), 2) AS cache_value,
+    round(((((c.value - c.commision) - e.value) - e.commision) - e.tax), 2) AS cache_value,
     round(gss.value, 2) AS gain_of_sold_shares,
     e.commision,
     e.tax,
