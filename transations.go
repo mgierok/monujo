@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"strconv"
-	_ "github.com/lib/pq"
 	"github.com/mgierok/monujo/repository"
 	"github.com/mgierok/monujo/repository/entity"
 	"github.com/mgierok/monujo/console"

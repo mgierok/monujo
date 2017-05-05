@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 
+	_ "github.com/lib/pq"
 	"github.com/cep21/xdgbasedir"
 	"github.com/jmoiron/sqlx"
 )

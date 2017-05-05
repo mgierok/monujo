@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 
-	_ "github.com/lib/pq"
 	"github.com/mgierok/monujo/repository"
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
