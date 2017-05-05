@@ -16,19 +16,11 @@ func PutTransaction() {
 
 	var t entity.Transaction
 	get(portfolioId, &t)
-
-	isShort := isShort()
-
 	get(date, &t)
 	get(ticker, &t)
 	get(price, &t)
 	get(currency, &t)
 	get(shares, &t)
-
-	if (isShort && t.Shares > 0) || (!isShort && t.Shares < 0) {
-		t.Shares = 0 - t.Shares
-	}
-
 	get(commision, &t)
 	get(exchangeRate, &t)
 	get(tax, &t)
@@ -121,21 +113,6 @@ func portfolioId(e *entity.Transaction) {
 			return
 		}
 	}
-}
-
-func isShort() bool {
-	var input string
-	fmt.Println("(B)UY or (S)ELL?")
-	fmt.Scanln(&input)
-	input = strings.ToUpper(input)
-
-	if "S" == input {
-		return true
-	} else if "B" == input {
-		return false
-	}
-
-	return isShort()
 }
 
 func date(e *entity.Transaction) {
@@ -242,8 +219,29 @@ func shares(e *entity.Transaction) {
 		return
 	}
 
+	isShort := isShort()
+    if (isShort && s > 0) || (!isShort && s < 0) {
+		s = 0 - s
+    }
+
 	e.Shares = s
 }
+
+func isShort() bool {
+	var input string
+	fmt.Println("(B)UY or (S)ELL?")
+	fmt.Scanln(&input)
+	input = strings.ToUpper(input)
+
+	if "S" == input {
+		return true
+	} else if "B" == input {
+		return false
+	}
+
+	return isShort()
+}
+
 
 func exchangeRate(e *entity.Transaction) {
 	fmt.Print("Exchange rate (default: 1):")
