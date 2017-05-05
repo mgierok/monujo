@@ -184,7 +184,8 @@ CREATE TABLE operations (
     date date NOT NULL,
     type financing_operation NOT NULL,
     value numeric,
-    description character varying(128)
+    description character varying(128),
+    commision numeric DEFAULT 0 NOT NULL
 );
 
 
