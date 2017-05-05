@@ -33,7 +33,8 @@ CREATE TYPE currency AS ENUM (
 CREATE TYPE financing_operation AS ENUM (
     'deposit',
     'withdraw',
-    'dividend'
+    'dividend',
+    'bond interest'
 );
 
 
