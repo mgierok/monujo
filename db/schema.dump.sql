@@ -39,6 +39,21 @@ CREATE TYPE financing_operation AS ENUM (
 
 
 --
+-- Name: agg_first(anyarray, anyelement, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION agg_first(p_state anyarray, p_new_element anyelement, p_limit integer) RETURNS anyarray
+    LANGUAGE sql
+    AS $$
+select case
+    when coalesce( array_length( p_state, 1 ), 0 ) < p_limit
+         then p_state || p_new_element
+    else p_state
+     end;
+$$;
+
+
+--
 -- Name: latest_quotes_before_insert(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -121,6 +136,17 @@ DECLARE
 		RETURN NEW;
 	END;
 $$;
+
+
+--
+-- Name: first(anyelement, integer); Type: AGGREGATE; Schema: public; Owner: -
+--
+
+CREATE AGGREGATE first(anyelement, integer) (
+    SFUNC = agg_first,
+    STYPE = anyarray,
+    INITCOND = '{}'
+);
 
 
 --
