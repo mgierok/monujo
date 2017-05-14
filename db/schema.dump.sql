@@ -301,7 +301,8 @@ CREATE VIEW owned_stocks AS
             sum(((rs.shares * t.price) * COALESCE(s_1.leverage, (1)::numeric))) AS expenditure,
             sum((((rs.shares * t.price) * t.exchange_rate) * COALESCE(s_1.leverage, (1)::numeric))) AS expenditure_base_currency,
             (sum((rs.shares * t.price)) / sum(rs.shares)) AS average_price,
-            (sum(((rs.shares * t.price) * t.exchange_rate)) / sum(rs.shares)) AS average_price_base_currency
+            (sum(((rs.shares * t.price) * t.exchange_rate)) / sum(rs.shares)) AS average_price_base_currency,
+            first(t.price, 1 ORDER BY t.date DESC, t.transaction_id DESC) AS last_purchase_price
            FROM ((transactions t
              JOIN remaining_shares rs ON ((rs.transaction_id = t.transaction_id)))
              LEFT JOIN securities s_1 ON ((s_1.ticker = t.ticker)))
@@ -327,14 +328,14 @@ CREATE VIEW owned_stocks AS
     round(os.average_price, 2) AS average_price,
     round(os.average_price_base_currency, 2) AS average_price_base_currency,
     COALESCE(s.leverage, (1)::numeric) AS leverage,
-    round((((os.shares * q.close) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure), 2) AS gain,
-    round((((((os.shares * q.close) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure) / abs(os.expenditure)) * (100)::numeric), 2) AS percentage_gain,
-    round(((((os.shares * q.close) * COALESCE(s.leverage, (1)::numeric)) *
+    round((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure), 2) AS gain,
+    round((((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure) / abs(os.expenditure)) * (100)::numeric), 2) AS percentage_gain,
+    round(((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
         CASE
             WHEN (os.currency = p.currency) THEN (1)::numeric
             ELSE e.close
         END) - os.expenditure_base_currency), 2) AS gain_base_currency,
-    round(((((((os.shares * q.close) * COALESCE(s.leverage, (1)::numeric)) *
+    round(((((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
         CASE
             WHEN (os.currency = p.currency) THEN (1)::numeric
             ELSE e.close
