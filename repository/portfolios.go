@@ -6,7 +6,7 @@ import (
 
 func PortfoliosExt() (entity.PortfoliosExt, error) {
 	portfolios := entity.PortfoliosExt{}
-	err := Db().Select(&portfolios, "SELECT portfolio_id, name, currency, cache_value, gain_of_sold_shares, commision, tax, gain_of_owned_shares, estimated_gain, estimated_gain_costs_inc FROM portfolios_ext")
+	err := Db().Select(&portfolios, "SELECT portfolio_id, name, currency, cache_value, gain_of_sold_shares, commision, tax, gain_of_owned_shares, estimated_gain, estimated_gain_costs_inc, estimated_value FROM portfolios_ext")
 	return portfolios, err
 }
 

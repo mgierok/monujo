@@ -21,6 +21,7 @@ type PortfolioExt struct {
 	GainOfOwnedShares     sql.NullFloat64 `db:"gain_of_owned_shares"`
 	EstimatedGain         sql.NullFloat64 `db:"estimated_gain"`
 	EstimatedGainCostsInc sql.NullFloat64 `db:"estimated_gain_costs_inc"`
+	EstimatedValue        sql.NullFloat64 `db:"estimated_value"`
 }
 
 type PortfoliosExt []PortfolioExt

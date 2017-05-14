@@ -339,7 +339,13 @@ CREATE VIEW owned_stocks AS
         CASE
             WHEN (os.currency = p.currency) THEN (1)::numeric
             ELSE e.close
-        END) - os.expenditure_base_currency) / abs(os.expenditure_base_currency)) * (100)::numeric), 2) AS percentage_gain_base_currency
+        END) - os.expenditure_base_currency) / abs(os.expenditure_base_currency)) * (100)::numeric), 2) AS percentage_gain_base_currency,
+    round(((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)), 2) AS market_value,
+    round((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
+        CASE
+            WHEN (os.currency = p.currency) THEN (1)::numeric
+            ELSE e.close
+        END), 2) AS market_value_base_currency
    FROM ((((owned_shares os
      JOIN portfolios p ON ((os.portfolio_id = p.portfolio_id)))
      LEFT JOIN securities s ON ((os.ticker = s.ticker)))
@@ -380,9 +386,10 @@ CREATE VIEW portfolios_ext AS
              LEFT JOIN securities s ON ((s.ticker = tin.ticker)))
           WHERE d.disposed
           GROUP BY tin.portfolio_id
-        ), gain_of_owned_shares AS (
+        ), owned_shares_summary AS (
          SELECT s.portfolio_id,
-            sum(s.gain_base_currency) AS value
+            sum(s.gain_base_currency) AS gain_of_owned_shares,
+            sum(s.market_value_base_currency) AS market_value_base_currency
            FROM owned_stocks s
           GROUP BY s.portfolio_id
         )
@@ -393,14 +400,15 @@ CREATE VIEW portfolios_ext AS
     round(gss.value, 2) AS gain_of_sold_shares,
     e.commision,
     e.tax,
-    round(gos.value, 2) AS gain_of_owned_shares,
-    round((COALESCE(gss.value, (0)::numeric) + COALESCE(gos.value, (0)::numeric)), 2) AS estimated_gain,
-    round((((COALESCE(gss.value, (0)::numeric) + COALESCE(gos.value, (0)::numeric)) - e.commision) - e.tax), 2) AS estimated_gain_costs_inc
+    round(oss.gain_of_owned_shares, 2) AS gain_of_owned_shares,
+    round((COALESCE(gss.value, (0)::numeric) + COALESCE(oss.gain_of_owned_shares, (0)::numeric)), 2) AS estimated_gain,
+    round((((COALESCE(gss.value, (0)::numeric) + COALESCE(oss.gain_of_owned_shares, (0)::numeric)) - e.commision) - e.tax), 2) AS estimated_gain_costs_inc,
+    round((COALESCE(((((c.value - c.commision) - e.value) - e.commision) - e.tax), (0)::numeric) + COALESCE(oss.market_value_base_currency, (0)::numeric)), 2) AS estimated_value
    FROM ((((portfolios p
      LEFT JOIN cache c ON ((c.portfolio_id = p.portfolio_id)))
      LEFT JOIN expenditure e ON ((e.portfolio_id = p.portfolio_id)))
      LEFT JOIN gain_of_sold_shares gss ON ((gss.portfolio_id = p.portfolio_id)))
-     LEFT JOIN gain_of_owned_shares gos ON ((gos.portfolio_id = p.portfolio_id)));
+     LEFT JOIN owned_shares_summary oss ON ((oss.portfolio_id = p.portfolio_id)));
 
 
 --

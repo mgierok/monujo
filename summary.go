@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/mgierok/monujo/repository"
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
+	"github.com/mgierok/monujo/repository"
 )
 
 func Summary() {
@@ -64,6 +64,7 @@ func Summary() {
 			pe.GainOfOwnedShares,
 			pe.EstimatedGain,
 			pe.EstimatedGainCostsInc,
+			pe.EstimatedValue,
 		})
 	}
 
@@ -77,6 +78,7 @@ func Summary() {
 		"Gain Of Ownded Shares",
 		"Estimated Gain",
 		"Estimated Gain Costs Inc.",
+		"Estimated Value",
 	}
 
 	console.DrawTable(header, data)
