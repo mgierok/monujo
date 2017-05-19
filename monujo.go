@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mgierok/monujo/repository"
+	"github.com/mgierok/monujo/config"
 	"github.com/mgierok/monujo/console"
+	"github.com/mgierok/monujo/repository"
 )
 
 func main() {
+	config.MustInitialize()
+
 	db := GetDbConnection()
 	repository.SetDb(db)
 	defer db.Close()
@@ -39,7 +42,7 @@ func mainMenu() {
 	} else if action == "3" {
 		runAction(Transactions)
 	} else if action == "Q" {
-		return;
+		return
 	} else {
 		mainMenu()
 	}

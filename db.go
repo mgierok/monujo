@@ -1,35 +1,22 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 
-	_ "github.com/lib/pq"
-	"github.com/cep21/xdgbasedir"
+	"github.com/mgierok/monujo/config"
+
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
-type DbConfig struct {
-	Host     string
-	User     string
-	Password string
-	Dbname   string
-}
-
 func GetDbConnection() *sqlx.DB {
-	dbConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/db.json")
-	dbConfigFile, err := ioutil.ReadFile(dbConfigFilePath)
-	dbConfig := DbConfig{}
-	json.Unmarshal(dbConfigFile, &dbConfig)
-
 	dbinfo := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbConfig.Host,
-		dbConfig.User,
-		dbConfig.Password,
-		dbConfig.Dbname,
+		config.Db().Host,
+		config.Db().User,
+		config.Db().Password,
+		config.Db().Dbname,
 	)
 	db, err := sqlx.Connect("postgres", dbinfo)
 
