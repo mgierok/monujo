@@ -6,15 +6,14 @@ import (
 
 	"github.com/mgierok/monujo/config"
 	"github.com/mgierok/monujo/console"
-	"github.com/mgierok/monujo/repository"
+	"github.com/mgierok/monujo/db"
 )
 
 func main() {
 	config.MustInitialize()
+	db.MustInitialize()
 
-	db := GetDbConnection()
-	repository.SetDb(db)
-	defer db.Close()
+	defer db.Connection().Close()
 
 	mainMenu()
 }

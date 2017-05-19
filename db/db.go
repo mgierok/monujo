@@ -1,8 +1,7 @@
-package main
+package db
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/mgierok/monujo/config"
 
@@ -10,7 +9,9 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func GetDbConnection() *sqlx.DB {
+var db *sqlx.DB
+
+func MustInitialize() {
 	dbinfo := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s sslmode=disable",
 		config.Db().Host,
@@ -18,11 +19,15 @@ func GetDbConnection() *sqlx.DB {
 		config.Db().Password,
 		config.Db().Dbname,
 	)
-	db, err := sqlx.Connect("postgres", dbinfo)
+
+	var err error
+	db, err = sqlx.Connect("postgres", dbinfo)
 
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
+}
 
+func Connection() *sqlx.DB {
 	return db
 }
