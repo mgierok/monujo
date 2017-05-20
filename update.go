@@ -9,10 +9,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
 	"github.com/mgierok/monujo/repository"
 	"github.com/mgierok/monujo/repository/entity"
 )
+
+var availableSources = map[string]func([]string) entity.Quotes{
+	"stooq": stooq,
+}
 
 func Update() {
 	ownedStocks, err := repository.OwnedStocks()
@@ -31,20 +36,61 @@ func Update() {
 		}
 	}
 
-	for source, tickers := range importMap {
-		var quotes entity.Quotes
-		if source == "stooq" {
-			quotes = stooq(tickers)
-		}
+	for source, f := range sources() {
+		if len(importMap[source]) > 0 {
+			var quotes entity.Quotes
+			if source == source {
+				quotes = f(importMap[source])
+			}
 
-		for _, q := range quotes {
-			_, err = repository.StoreLatestQuote(q)
-			if err == nil {
-				fmt.Printf("Ticker: %s Quote: %f\n", q.Ticker, q.Close)
-			} else {
-				fmt.Printf("Update failed for %s\n", q.Ticker)
+			for _, q := range quotes {
+				_, err = repository.StoreLatestQuote(q)
+				if err == nil {
+					fmt.Printf("Ticker: %s Quote: %f\n", q.Ticker, q.Close)
+				} else {
+					fmt.Printf("Update failed for %s\n", q.Ticker)
+				}
 			}
 		}
+	}
+}
+
+func sources() map[string]func([]string) entity.Quotes {
+	fmt.Println("Choose from which source you want to update quotes")
+	fmt.Println("")
+
+	dict := map[string]string{
+		"A": "All",
+	}
+	data := [][]interface{}{
+		[]interface{}{"A", "All"},
+	}
+	i := 1
+	for s, _ := range availableSources {
+		dict[strconv.Itoa(i)] = s
+		data = append(data, []interface{}{strconv.Itoa(i), s})
+		i++
+	}
+
+	console.DrawTable([]string{}, data)
+	fmt.Println("")
+
+	var input string
+	fmt.Scanln(&input)
+
+	input = strings.ToUpper(input)
+
+	_, exists := dict[input]
+	if exists {
+		if input == "A" {
+			return availableSources
+		} else {
+			return map[string]func([]string) entity.Quotes{
+				dict[input]: availableSources[dict[input]],
+			}
+		}
+	} else {
+		return sources()
 	}
 }
 
