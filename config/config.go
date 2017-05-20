@@ -16,8 +16,13 @@ type dbConf struct {
 
 var db dbConf
 
-func MustInitialize() {
-	dbConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/db.json")
+func MustInitialize(env string) {
+	var suffix string
+	if len(env) > 0 {
+		suffix = "." + env
+	}
+
+	dbConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/db.json" + suffix)
 	if err != nil {
 		panic(err)
 	}

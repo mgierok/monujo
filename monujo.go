@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"strings"
 
@@ -10,7 +11,11 @@ import (
 )
 
 func main() {
-	config.MustInitialize()
+	var env string
+	flag.StringVar(&env, "env", "", "force environment")
+	flag.Parse()
+
+	config.MustInitialize(env)
 	db.MustInitialize()
 
 	defer db.Connection().Close()
