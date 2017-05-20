@@ -61,6 +61,7 @@ func sources() map[string]func([]string) entity.Quotes {
 
 	dict := map[string]string{
 		"A": "All",
+		"Q": "Quit",
 	}
 	data := [][]interface{}{
 		[]interface{}{"A", "All"},
@@ -71,12 +72,14 @@ func sources() map[string]func([]string) entity.Quotes {
 		data = append(data, []interface{}{strconv.Itoa(i), s})
 		i++
 	}
+	data = append(data, []interface{}{"Q", "Quit"})
 
 	console.DrawTable([]string{}, data)
 	fmt.Println("")
 
 	var input string
 	fmt.Scanln(&input)
+	console.Clear()
 
 	input = strings.ToUpper(input)
 
@@ -84,6 +87,8 @@ func sources() map[string]func([]string) entity.Quotes {
 	if exists {
 		if input == "A" {
 			return availableSources
+		} else if input == "Q" {
+			return map[string]func([]string) entity.Quotes{}
 		} else {
 			return map[string]func([]string) entity.Quotes{
 				dict[input]: availableSources[dict[input]],
