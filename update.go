@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,7 +17,8 @@ import (
 )
 
 var availableSources = map[string]func([]string) entity.Quotes{
-	"stooq": stooq,
+	"stooq":    stooq,
+	"ingturbo": ingturbo,
 }
 
 func Update() {
@@ -139,6 +141,47 @@ func stooq(tickers []string) entity.Quotes {
 			quote.High, _ = strconv.ParseFloat(records[last][2], 64)
 			quote.Low, _ = strconv.ParseFloat(records[last][3], 64)
 			quote.Close, _ = strconv.ParseFloat(records[last][4], 64)
+
+			quotes = append(quotes, quote)
+		}
+	}
+
+	return quotes
+}
+
+func ingturbo(tickers []string) entity.Quotes {
+	type response struct {
+		BidQuotes [][]float64 `json:"BidQuotes"`
+	}
+	var quotes entity.Quotes
+
+	var client http.Client
+
+	for _, t := range tickers {
+		subt := strings.Trim(strings.ToLower(t), " ")
+		resp, err := client.Get(
+			fmt.Sprintf(
+				"https://www.ingturbo.pl/services/product/PLINGNV%s/chart?period=intraday",
+				subt[len(t)-5:],
+			),
+		)
+		if err != nil {
+			fmt.Printf("Update failed for %s\n", t)
+		} else {
+			body, _ := ioutil.ReadAll(resp.Body)
+			var r response
+			_ = json.Unmarshal(body, &r)
+			v := r.BidQuotes[len(r.BidQuotes)-1][1]
+			quote := entity.Quote{
+				Ticker:  t,
+				Date:    time.Now(),
+				Open:    v,
+				High:    v,
+				Low:     v,
+				Close:   v,
+				Volume:  0,
+				OpenInt: 0,
+			}
 
 			quotes = append(quotes, quote)
 		}

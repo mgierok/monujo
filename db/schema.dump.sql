@@ -44,7 +44,8 @@ CREATE TYPE financing_operation AS ENUM (
 
 CREATE TYPE quotes_source AS ENUM (
     'stooq',
-    'google'
+    'google',
+    'ingturbo'
 );
 
 
