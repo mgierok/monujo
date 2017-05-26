@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	"strings"
 
 	"database/sql"
@@ -32,7 +33,7 @@ type OwnedStocks []OwnedStock
 
 func (stock *Stock) DisplayName() string {
 	if stock.ShortName.Valid {
-		return stock.ShortName.String
+		return fmt.Sprintf("%s (%s)", stock.ShortName.String, strings.Trim(stock.Ticker, " "))
 	} else {
 		return strings.Trim(stock.Ticker, " ")
 	}
