@@ -39,6 +39,17 @@ CREATE TYPE financing_operation AS ENUM (
 
 
 --
+-- Name: quotes_source; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE quotes_source AS ENUM (
+    'stooq',
+    'google',
+    'ingturbo'
+);
+
+
+--
 -- Name: agg_first(anyarray, anyelement, integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -255,7 +266,8 @@ CREATE TABLE securities (
     short_name character varying(128) NOT NULL,
     full_name character varying(128) NOT NULL,
     market character varying(8) NOT NULL,
-    leverage numeric DEFAULT 1 NOT NULL
+    leverage numeric DEFAULT 1 NOT NULL,
+    quotes_source quotes_source NOT NULL
 );
 
 

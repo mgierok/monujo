@@ -29,6 +29,7 @@ func mainMenu() {
 		[]interface{}{"1", "Summary"},
 		[]interface{}{"2", "Put transaction"},
 		[]interface{}{"3", "List transactions"},
+		[]interface{}{"4", "Update Quotes"},
 		[]interface{}{"Q", "Quit"},
 	}
 
@@ -45,6 +46,8 @@ func mainMenu() {
 		runAction(PutTransaction)
 	} else if action == "3" {
 		runAction(Transactions)
+	} else if action == "4" {
+		runAction(Update)
 	} else if action == "Q" {
 		return
 	} else {

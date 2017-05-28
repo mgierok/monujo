@@ -38,3 +38,17 @@ func (stock *Stock) DisplayName() string {
 		return strings.Trim(stock.Ticker, " ")
 	}
 }
+
+func (stocks *OwnedStocks) DistinctTickers() []string {
+	t := make(map[string]struct{})
+	for _, stock := range *stocks {
+		t[stock.Ticker] = struct{}{}
+	}
+
+	keys := make([]string, 0, len(t))
+	for k := range t {
+		keys = append(keys, k)
+	}
+
+	return keys
+}
