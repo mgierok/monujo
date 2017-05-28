@@ -128,22 +128,24 @@ func stooq(tickers []string) entity.Quotes {
 
 			records, err := r.ReadAll()
 			if err != nil {
-				fmt.Println(err)
-			}
+				fmt.Printf("Ticker: %s Error: %s\n", t, err)
+			} else if len(records[0]) == 1 {
+				fmt.Printf("Ticker: %s Error: %s\n", t, records[0][0])
+			} else {
+				last := len(records) - 1
+				quote := entity.Quote{
+					Ticker:  t,
+					Volume:  0,
+					OpenInt: 0,
+				}
+				quote.Date, _ = time.Parse("2006-01-02", records[last][0])
+				quote.Open, _ = strconv.ParseFloat(records[last][1], 64)
+				quote.High, _ = strconv.ParseFloat(records[last][2], 64)
+				quote.Low, _ = strconv.ParseFloat(records[last][3], 64)
+				quote.Close, _ = strconv.ParseFloat(records[last][4], 64)
 
-			last := len(records) - 1
-			quote := entity.Quote{
-				Ticker:  t,
-				Volume:  0,
-				OpenInt: 0,
+				quotes = append(quotes, quote)
 			}
-			quote.Date, _ = time.Parse("2006-01-02", records[last][0])
-			quote.Open, _ = strconv.ParseFloat(records[last][1], 64)
-			quote.High, _ = strconv.ParseFloat(records[last][2], 64)
-			quote.Low, _ = strconv.ParseFloat(records[last][3], 64)
-			quote.Close, _ = strconv.ParseFloat(records[last][4], 64)
-
-			quotes = append(quotes, quote)
 		}
 	}
 
