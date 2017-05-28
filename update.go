@@ -18,6 +18,7 @@ import (
 
 var availableSources = map[string]func([]string) entity.Quotes{
 	"stooq":    stooq,
+	"google":   google,
 	"ingturbo": ingturbo,
 }
 
@@ -182,6 +183,62 @@ func ingturbo(tickers []string) entity.Quotes {
 				Volume:  0,
 				OpenInt: 0,
 			}
+
+			quotes = append(quotes, quote)
+		}
+	}
+
+	return quotes
+}
+
+func google(tickers []string) entity.Quotes {
+	type gQuote struct {
+		Ticker   string `json:"t"`
+		Exchange string `json:"e"`
+		Quote    string `json:"l_fix"`
+		Date     string `json:"lt_dts"`
+	}
+	var quotes entity.Quotes
+
+	securities, err := repository.Securities(tickers)
+	log.PanicIfError(err)
+
+	var gtickers []string
+	var gmap = make(map[string]string)
+	for _, s := range securities {
+		gticker := s.Market + ":" + strings.TrimSuffix(strings.TrimSpace(s.Ticker), ".US")
+		gtickers = append(gtickers, gticker)
+		gmap[gticker] = s.Ticker
+	}
+
+	var client http.Client
+	resp, err := client.Get(
+		fmt.Sprintf(
+			"https://finance.google.com/finance/info?client=ig&q=%s",
+			strings.Join(gtickers, ","),
+		),
+	)
+	if err != nil {
+		fmt.Println("Update from Google failed")
+	} else {
+		body, _ := ioutil.ReadAll(resp.Body)
+		body = body[4:] // remove comment sign at the beginning of response
+
+		var gQuotes []gQuote
+		_ = json.Unmarshal(body, &gQuotes)
+
+		for _, gQuote := range gQuotes {
+			v, _ := strconv.ParseFloat(gQuote.Quote, 64)
+			quote := entity.Quote{
+				Ticker:  gmap[gQuote.Exchange+":"+gQuote.Ticker],
+				Open:    v,
+				High:    v,
+				Low:     v,
+				Close:   v,
+				Volume:  0,
+				OpenInt: 0,
+			}
+			quote.Date, _ = time.Parse("2006-01-02T15:04:05Z", gQuote.Date)
 
 			quotes = append(quotes, quote)
 		}
