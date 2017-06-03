@@ -65,6 +65,8 @@ func Summary() {
 			pe.EstimatedGain,
 			pe.EstimatedGainCostsInc,
 			pe.EstimatedValue,
+			pe.AnnualBalance,
+			pe.MonthBalance,
 		})
 	}
 
@@ -79,6 +81,8 @@ func Summary() {
 		"Estimated Gain",
 		"Estimated Gain Costs Inc.",
 		"Estimated Value",
+		"Annual Balance",
+		"Month Balance",
 	}
 
 	console.DrawTable(header, data)

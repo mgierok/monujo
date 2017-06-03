@@ -22,6 +22,8 @@ type PortfolioExt struct {
 	EstimatedGain         sql.NullFloat64 `db:"estimated_gain"`
 	EstimatedGainCostsInc sql.NullFloat64 `db:"estimated_gain_costs_inc"`
 	EstimatedValue        sql.NullFloat64 `db:"estimated_value"`
+	AnnualBalance         float64         `db:"annual_balance"`
+	MonthBalance          float64         `db:"month_balance"`
 }
 
 type PortfoliosExt []PortfolioExt
