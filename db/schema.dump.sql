@@ -405,25 +405,79 @@ CREATE VIEW portfolios_ext AS
            FROM owned_stocks s
           GROUP BY s.portfolio_id
         ), annual_balance AS (
-         SELECT tin.portfolio_id,
-            ((((sum((((d.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) + sum(tin.commision)) + sum(tin.tax)) + sum(tout.commision)) + sum(tout.tax)) AS outcome,
-            sum((((d.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS income
-           FROM (((disposals d
-             JOIN transactions tout ON (((d.out_transaction_id = tout.transaction_id) AND (date_part('year'::text, tout.date) = date_part('year'::text, ('now'::text)::date)))))
-             JOIN transactions tin ON ((d.in_transaction_id = tin.transaction_id)))
-             LEFT JOIN securities s ON ((s.ticker = tin.ticker)))
-          WHERE d.disposed
-          GROUP BY tin.portfolio_id
+         WITH annual_disposals AS (
+                 SELECT d.in_transaction_id,
+                    d.out_transaction_id,
+                    d.disposed_shares,
+                    d.disposed
+                   FROM (disposals d
+                     JOIN transactions tout ON (((d.out_transaction_id = tout.transaction_id) AND (date_part('year'::text, tout.date) = date_part('year'::text, ('now'::text)::date)))))
+                ), annual_transactions AS (
+                 SELECT annual_disposals.in_transaction_id AS transaction_id
+                   FROM annual_disposals
+                UNION
+                 SELECT annual_disposals.out_transaction_id AS transaction_id
+                   FROM annual_disposals
+                ), annual_costs AS (
+                 SELECT t.portfolio_id,
+                    sum(t.commision) AS commision,
+                    sum(t.tax) AS tax
+                   FROM (transactions t
+                     JOIN annual_transactions at ON ((at.transaction_id = t.transaction_id)))
+                  GROUP BY t.portfolio_id
+                ), annual_revenue AS (
+                 SELECT tin.portfolio_id,
+                    sum((((d.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS outcome,
+                    sum((((d.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS income
+                   FROM (((annual_disposals d
+                     JOIN transactions tout ON ((d.out_transaction_id = tout.transaction_id)))
+                     JOIN transactions tin ON ((d.in_transaction_id = tin.transaction_id)))
+                     LEFT JOIN securities s ON ((s.ticker = tin.ticker)))
+                  WHERE d.disposed
+                  GROUP BY tin.portfolio_id
+                )
+         SELECT ar.portfolio_id,
+            ((ar.outcome + ac.tax) + ac.commision) AS outcome,
+            ar.income
+           FROM (annual_revenue ar
+             JOIN annual_costs ac ON ((ac.portfolio_id = ar.portfolio_id)))
         ), month_balance AS (
-         SELECT tin.portfolio_id,
-            ((((sum((((d.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) + sum(tin.commision)) + sum(tin.tax)) + sum(tout.commision)) + sum(tout.tax)) AS outcome,
-            sum((((d.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS income
-           FROM (((disposals d
-             JOIN transactions tout ON ((((d.out_transaction_id = tout.transaction_id) AND (date_part('year'::text, tout.date) = date_part('year'::text, ('now'::text)::date))) AND (date_part('month'::text, tout.date) = date_part('month'::text, ('now'::text)::date)))))
-             JOIN transactions tin ON ((d.in_transaction_id = tin.transaction_id)))
-             LEFT JOIN securities s ON ((s.ticker = tin.ticker)))
-          WHERE d.disposed
-          GROUP BY tin.portfolio_id
+         WITH month_disposals AS (
+                 SELECT d.in_transaction_id,
+                    d.out_transaction_id,
+                    d.disposed_shares,
+                    d.disposed
+                   FROM (disposals d
+                     JOIN transactions tout ON ((((d.out_transaction_id = tout.transaction_id) AND (date_part('year'::text, tout.date) = date_part('year'::text, ('now'::text)::date))) AND (date_part('month'::text, tout.date) = date_part('month'::text, ('now'::text)::date)))))
+                ), month_transactions AS (
+                 SELECT month_disposals.in_transaction_id AS transaction_id
+                   FROM month_disposals
+                UNION
+                 SELECT month_disposals.out_transaction_id AS transaction_id
+                   FROM month_disposals
+                ), month_costs AS (
+                 SELECT t.portfolio_id,
+                    sum(t.commision) AS commision,
+                    sum(t.tax) AS tax
+                   FROM (transactions t
+                     JOIN month_transactions mt ON ((mt.transaction_id = t.transaction_id)))
+                  GROUP BY t.portfolio_id
+                ), month_revenue AS (
+                 SELECT tin.portfolio_id,
+                    sum((((d.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS outcome,
+                    sum((((d.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS income
+                   FROM (((month_disposals d
+                     JOIN transactions tout ON ((d.out_transaction_id = tout.transaction_id)))
+                     JOIN transactions tin ON ((d.in_transaction_id = tin.transaction_id)))
+                     LEFT JOIN securities s ON ((s.ticker = tin.ticker)))
+                  WHERE d.disposed
+                  GROUP BY tin.portfolio_id
+                )
+         SELECT mr.portfolio_id,
+            ((mr.outcome + mc.tax) + mc.commision) AS outcome,
+            mr.income
+           FROM (month_revenue mr
+             JOIN month_costs mc ON ((mc.portfolio_id = mr.portfolio_id)))
         )
  SELECT p.portfolio_id,
     p.name,
