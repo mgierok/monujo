@@ -6,24 +6,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mgierok/monujo/repository"
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
+	"github.com/mgierok/monujo/repository"
 	"github.com/mgierok/monujo/repository/entity"
 )
 
 func PutTransaction() {
 
 	var t entity.Transaction
-	get(portfolioId, &t)
-	get(date, &t)
-	get(ticker, &t)
-	get(price, &t)
-	get(currency, &t)
-	get(shares, &t)
-	get(commision, &t)
-	get(exchangeRate, &t)
-	get(tax, &t)
+	getT(portfolioId, &t)
+	getT(date, &t)
+	getT(ticker, &t)
+	getT(price, &t)
+	getT(currency, &t)
+	getT(shares, &t)
+	getT(commision, &t)
+	getT(exchangeRate, &t)
+	getT(tax, &t)
 
 	summary := [][]interface{}{
 		[]interface{}{"Portfolio ID", t.PortfolioId},
@@ -41,19 +41,49 @@ func PutTransaction() {
 	console.DrawTable([]string{}, summary)
 	fmt.Println("")
 
+	fmt.Println("Type 'Y' to insert or 'N' to abort")
 	if confirm() {
 		transactionId, err := repository.StoreTransaction(t)
 		log.PanicIfError(err)
 
 		fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
+
+		securityDetails(t.Ticker)
 	} else {
 		fmt.Println("Transaction has not been recorded")
 	}
+
+}
+
+func securityDetails(ticker string) {
+	exists, err := repository.SecurityExists(ticker)
+	log.PanicIfError(err)
+	if exists {
+		return
+	}
+
+	fmt.Printf("Would you like to add %s security detials to the database? [Y/N]\n", strings.TrimSpace(ticker))
+	if !confirm() {
+		return
+	}
+
+	s := entity.Security{
+		Ticker: ticker,
+	}
+	getS(shortName, &s)
+	getS(fullName, &s)
+	getS(market, &s)
+	getS(leverage, &s)
+	getS(quotesSource, &s)
+
+	t, err := repository.StoreSecurity(s)
+	log.PanicIfError(err)
+
+	fmt.Printf("Security details of %s has been stored\n", strings.TrimSpace(t))
 }
 
 func confirm() bool {
 	var input string
-	fmt.Println("Type 'Y' to insert or 'N' to abort")
 	fmt.Scanln(&input)
 	input = strings.ToUpper(input)
 
@@ -66,9 +96,14 @@ func confirm() bool {
 	return confirm()
 }
 
-func get(f func(*entity.Transaction), t *entity.Transaction) {
+func getT(f func(*entity.Transaction), t *entity.Transaction) {
 	console.Clear()
 	f(t)
+}
+
+func getS(f func(*entity.Security), s *entity.Security) {
+	console.Clear()
+	f(s)
 }
 
 func portfolioId(e *entity.Transaction) {
@@ -101,7 +136,7 @@ func portfolioId(e *entity.Transaction) {
 
 	if nil != err {
 		fmt.Printf("\n%s is not a valid portfolio ID\n\n", input)
-		get(portfolioId, e)
+		getT(portfolioId, e)
 		return
 	} else {
 		_, exists := dict[p]
@@ -109,7 +144,7 @@ func portfolioId(e *entity.Transaction) {
 			e.PortfolioId = p
 		} else {
 			fmt.Printf("\n%d is not a valid portfolio ID\n\n", p)
-			get(portfolioId, e)
+			getT(portfolioId, e)
 			return
 		}
 	}
@@ -131,7 +166,7 @@ func date(e *entity.Transaction) {
 		if err != nil {
 			fmt.Println(err)
 			fmt.Printf("\n%q is not a valid date format\n\n", input)
-			get(date, e)
+			getT(date, e)
 			return
 		} else {
 			e.Date = t
@@ -146,7 +181,7 @@ func ticker(e *entity.Transaction) {
 
 	t = strings.Trim(t, " ")
 	if t == "" {
-		get(ticker, e)
+		getT(ticker, e)
 		return
 	}
 
@@ -162,7 +197,7 @@ func price(e *entity.Transaction) {
 
 	if err != nil {
 		fmt.Printf("\n%s is not a valid price value\n\n", input)
-		get(price, e)
+		getT(price, e)
 		return
 	}
 
@@ -201,7 +236,7 @@ func currency(e *entity.Transaction) {
 		e.Currency = c
 	} else {
 		fmt.Printf("\n%s is not a valid currency\n\n", c)
-		get(currency, e)
+		getT(currency, e)
 		return
 	}
 }
@@ -215,14 +250,14 @@ func shares(e *entity.Transaction) {
 
 	if err != nil {
 		fmt.Printf("\n%s is not a valid share number value\n\n", input)
-		get(shares, e)
+		getT(shares, e)
 		return
 	}
 
 	isShort := isShort()
-    if (isShort && s > 0) || (!isShort && s < 0) {
+	if (isShort && s > 0) || (!isShort && s < 0) {
 		s = 0 - s
-    }
+	}
 
 	e.Shares = s
 }
@@ -242,7 +277,6 @@ func isShort() bool {
 	return isShort()
 }
 
-
 func exchangeRate(e *entity.Transaction) {
 	fmt.Print("Exchange rate (default: 1):")
 	var input string
@@ -255,7 +289,7 @@ func exchangeRate(e *entity.Transaction) {
 	} else {
 		if err != nil {
 			fmt.Printf("\n%s is not a valid exchange rate value\n\n", input)
-			get(exchangeRate, e)
+			getT(exchangeRate, e)
 			return
 		}
 	}
@@ -275,7 +309,7 @@ func commision(e *entity.Transaction) {
 	} else {
 		if err != nil {
 			fmt.Printf("\n%s is not a valid commision value\n\n", input)
-			get(commision, e)
+			getT(commision, e)
 			return
 		}
 	}
@@ -295,10 +329,90 @@ func tax(e *entity.Transaction) {
 	} else {
 		if err != nil {
 			fmt.Printf("\n%s is not a valid tax value\n\n", input)
-			get(tax, e)
+			getT(tax, e)
 			return
 		}
 	}
 
 	e.Tax = t
+}
+
+func shortName(s *entity.Security) {
+	fmt.Print("Short name: ")
+	var input string
+	fmt.Scanln(&input)
+
+	input = strings.TrimSpace(input)
+
+	if input == "" {
+		getS(shortName, s)
+		return
+	}
+
+	s.ShortName = input
+}
+
+func fullName(s *entity.Security) {
+	fmt.Print("Full name: ")
+	var input string
+	fmt.Scanln(&input)
+
+	input = strings.TrimSpace(input)
+
+	if input == "" {
+		getS(fullName, s)
+		return
+	}
+
+	s.FullName = input
+}
+
+func market(s *entity.Security) {
+	fmt.Print("Market: ")
+	var input string
+	fmt.Scanln(&input)
+
+	input = strings.TrimSpace(input)
+
+	if input == "" {
+		getS(market, s)
+		return
+	}
+
+	s.Market = input
+}
+
+func leverage(s *entity.Security) {
+	fmt.Print("Leverage (1): ")
+	var input string
+	fmt.Scanln(&input)
+
+	l, err := strconv.ParseFloat(input, 64)
+
+	if input == "" {
+		l = 1
+	} else {
+		if err != nil {
+			fmt.Printf("\n%s is not a valid leverage value\n\n", input)
+			getS(leverage, s)
+			return
+		}
+	}
+
+	s.Leverage = l
+}
+
+func quotesSource(s *entity.Security) {
+	fmt.Print("Quotes source: ")
+	var input string
+	fmt.Scanln(&input)
+
+	input = strings.TrimSpace(input)
+
+	if input == "" {
+		getS(quotesSource, s)
+		return
+	}
+
+	s.QuotesSource = input
 }

@@ -6,6 +6,20 @@ import (
 	"github.com/mgierok/monujo/repository/entity"
 )
 
+func SecurityExists(ticker string) (bool, error) {
+	var exists bool
+	err := db.Connection().Get(
+		&exists,
+		`SELECT
+			COUNT(1)
+		FROM securities
+		WHERE ticker = $1
+		`,
+		ticker,
+	)
+	return exists, err
+}
+
 func Securities(tickers []string) (entity.Securities, error) {
 	s := entity.Securities{}
 	var query string
@@ -42,4 +56,19 @@ func Securities(tickers []string) (entity.Securities, error) {
 	}
 
 	return s, err
+}
+
+func StoreSecurity(s entity.Security) (string, error) {
+	stmt, err := db.Connection().PrepareNamed(`
+		INSERT INTO securities (ticker, short_name, full_name, market, leverage, quotes_source)
+		VALUES (:ticker, :short_name, :full_name, :market, :leverage, :quotes_source)
+		RETURNING ticker
+	`)
+
+	var t string
+	if nil == err {
+		err = stmt.Get(&t, s)
+	}
+
+	return t, err
 }
