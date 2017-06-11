@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -339,8 +341,9 @@ func tax(e *entity.Transaction) {
 
 func shortName(s *entity.Security) {
 	fmt.Print("Short name: ")
-	var input string
-	fmt.Scanln(&input)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	input := scanner.Text()
 
 	input = strings.TrimSpace(input)
 
@@ -354,8 +357,9 @@ func shortName(s *entity.Security) {
 
 func fullName(s *entity.Security) {
 	fmt.Print("Full name: ")
-	var input string
-	fmt.Scanln(&input)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	input := scanner.Text()
 
 	input = strings.TrimSpace(input)
 
