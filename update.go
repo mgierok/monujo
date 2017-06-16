@@ -25,9 +25,13 @@ var availableSources = map[string]func([]string) entity.Quotes{
 func Update() {
 	ownedStocks, err := repository.OwnedStocks()
 	log.PanicIfError(err)
+	currencies, err := repository.Currencies()
+	log.PanicIfError(err)
 
 	var importMap = make(map[string][]string)
 	tickers := ownedStocks.DistinctTickers()
+	tickers = append(tickers, currencies.CurrencyPairs("PLN")...)
+
 	securities, err := repository.Securities(tickers)
 	log.PanicIfError(err)
 
@@ -198,6 +202,7 @@ func google(tickers []string) entity.Quotes {
 		Ticker   string `json:"t"`
 		Exchange string `json:"e"`
 		Quote    string `json:"l_fix"`
+		QuoteC   string `json:"l"`
 		Date     string `json:"lt_dts"`
 	}
 	var quotes entity.Quotes
@@ -231,6 +236,9 @@ func google(tickers []string) entity.Quotes {
 
 		for _, gQuote := range gQuotes {
 			v, _ := strconv.ParseFloat(gQuote.Quote, 64)
+			if v == 0 {
+				v, _ = strconv.ParseFloat(gQuote.QuoteC, 64)
+			}
 			quote := entity.Quote{
 				Ticker:  gmap[gQuote.Exchange+":"+gQuote.Ticker],
 				Open:    v,
