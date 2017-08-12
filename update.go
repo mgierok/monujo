@@ -16,7 +16,7 @@ import (
 	"github.com/mgierok/monujo/repository/entity"
 )
 
-var availableSources = map[string]func([]string) entity.Quotes{
+var availableSources = map[string]func([]string, chan entity.Quote){
 	"stooq":    stooq,
 	"google":   google,
 	"ingturbo": ingturbo,
@@ -45,12 +45,13 @@ func Update() {
 
 	for source, f := range sources() {
 		if len(importMap[source]) > 0 {
-			var quotes entity.Quotes
+			var quotes chan entity.Quote = make(chan entity.Quote)
+
 			if source == source {
-				quotes = f(importMap[source])
+				go f(importMap[source], quotes)
 			}
 
-			for _, q := range quotes {
+			for q := range quotes {
 				_, err = repository.StoreLatestQuote(q)
 				if err == nil {
 					fmt.Printf("Ticker: %s Quote: %f\n", q.Ticker, q.Close)
@@ -62,7 +63,7 @@ func Update() {
 	}
 }
 
-func sources() map[string]func([]string) entity.Quotes {
+func sources() map[string]func([]string, chan entity.Quote) {
 	fmt.Println("Choose from which source you want to update quotes")
 	fmt.Println("")
 
@@ -95,9 +96,9 @@ func sources() map[string]func([]string) entity.Quotes {
 		if input == "A" {
 			return availableSources
 		} else if input == "Q" {
-			return map[string]func([]string) entity.Quotes{}
+			return map[string]func([]string, chan entity.Quote){}
 		} else {
-			return map[string]func([]string) entity.Quotes{
+			return map[string]func([]string, chan entity.Quote){
 				dict[input]: availableSources[dict[input]],
 			}
 		}
@@ -106,8 +107,7 @@ func sources() map[string]func([]string) entity.Quotes {
 	}
 }
 
-func stooq(tickers []string) entity.Quotes {
-	var quotes entity.Quotes
+func stooq(tickers []string, quotes chan entity.Quote) {
 
 	const layout = "20060102"
 	now := time.Now()
@@ -148,19 +148,17 @@ func stooq(tickers []string) entity.Quotes {
 				quote.Low, _ = strconv.ParseFloat(records[last][3], 64)
 				quote.Close, _ = strconv.ParseFloat(records[last][4], 64)
 
-				quotes = append(quotes, quote)
+				quotes <- quote
 			}
 		}
 	}
-
-	return quotes
+	close(quotes)
 }
 
-func ingturbo(tickers []string) entity.Quotes {
+func ingturbo(tickers []string, quotes chan entity.Quote) {
 	type response struct {
 		BidQuotes [][]float64 `json:"BidQuotes"`
 	}
-	var quotes entity.Quotes
 
 	var client http.Client
 
@@ -190,14 +188,13 @@ func ingturbo(tickers []string) entity.Quotes {
 				OpenInt: 0,
 			}
 
-			quotes = append(quotes, quote)
+			quotes <- quote
 		}
 	}
-
-	return quotes
+	close(quotes)
 }
 
-func google(tickers []string) entity.Quotes {
+func google(tickers []string, quotes chan entity.Quote) {
 	type gQuote struct {
 		Ticker   string `json:"t"`
 		Exchange string `json:"e"`
@@ -205,7 +202,6 @@ func google(tickers []string) entity.Quotes {
 		QuoteC   string `json:"l"`
 		Date     string `json:"lt_dts"`
 	}
-	var quotes entity.Quotes
 
 	securities, err := repository.Securities(tickers)
 	log.PanicIfError(err)
@@ -250,9 +246,8 @@ func google(tickers []string) entity.Quotes {
 			}
 			quote.Date, _ = time.Parse("2006-01-02T15:04:05Z", gQuote.Date)
 
-			quotes = append(quotes, quote)
+			quotes <- quote
 		}
 	}
-
-	return quotes
+	close(quotes)
 }
