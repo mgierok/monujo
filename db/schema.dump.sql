@@ -34,7 +34,8 @@ CREATE TYPE financing_operation AS ENUM (
     'deposit',
     'withdraw',
     'dividend',
-    'bond interest'
+    'bond interest',
+    'compounding'
 );
 
 
