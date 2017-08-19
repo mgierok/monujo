@@ -13,8 +13,9 @@ var db *sqlx.DB
 
 func MustInitialize() {
 	dbinfo := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s sslmode=disable",
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		config.Db().Host,
+		config.Db().Port,
 		config.Db().User,
 		config.Db().Password,
 		config.Db().Dbname,

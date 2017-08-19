@@ -9,6 +9,7 @@ import (
 
 type dbConf struct {
 	Host     string
+	Port     string
 	User     string
 	Password string
 	Dbname   string
