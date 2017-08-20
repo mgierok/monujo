@@ -52,7 +52,7 @@ func mainMenu() {
 	console.Clear()
 
 	if a == "S" {
-		runAction(Summary)
+		runAction(action.Summary)
 	} else if a == "PT" {
 		runAction(PutTransaction)
 	} else if a == "LT" {

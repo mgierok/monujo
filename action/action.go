@@ -11,6 +11,86 @@ import (
 	"github.com/mgierok/monujo/repository/entity"
 )
 
+func Summary() {
+	ownedStocks, err := repository.OwnedStocks()
+	log.PanicIfError(err)
+
+	var data [][]interface{}
+
+	for _, os := range ownedStocks {
+		data = append(data, []interface{}{
+			os.PortfolioName,
+			os.DisplayName(),
+			os.Shares,
+			os.LastPrice,
+			os.AveragePrice,
+			os.LastPriceBaseCurrency,
+			os.AveragePriceBaseCurrency,
+			os.Gain,
+			os.GainBaseCurrency,
+			os.PercentageGain,
+			os.PercentageGainBaseCurrency,
+		})
+	}
+
+	header := []string{
+		"Portfolio Name",
+		"Stock",
+		"Shares",
+		"Last Price",
+		"Average Price",
+		"Last Price BC",
+		"Average Price BC",
+		"Gain",
+		"Gain BC",
+		"Gain%",
+		"Gain BC%",
+	}
+
+	console.DrawTable(header, data)
+
+	data = data[0:0]
+	fmt.Println("")
+	fmt.Println("")
+
+	portfoliosExt, err := repository.PortfoliosExt()
+	log.PanicIfError(err)
+
+	for _, pe := range portfoliosExt {
+		data = append(data, []interface{}{
+			pe.PortfolioId,
+			pe.Name,
+			pe.CacheValue,
+			pe.GainOfSoldShares,
+			pe.Commision,
+			pe.Tax,
+			pe.GainOfOwnedShares,
+			pe.EstimatedGain,
+			pe.EstimatedGainCostsInc,
+			pe.EstimatedValue,
+			pe.AnnualBalance,
+			pe.MonthBalance,
+		})
+	}
+
+	header = []string{
+		"Portfolio Id",
+		"Portfolio Name",
+		"Cache Value",
+		"Gain of Sold Shares",
+		"Commision",
+		"Tax",
+		"Gain Of Ownded Shares",
+		"Estimated Gain",
+		"Estimated Gain Costs Inc.",
+		"Estimated Value",
+		"Annual Balance",
+		"Month Balance",
+	}
+
+	console.DrawTable(header, data)
+}
+
 func ListTransactions() {
 	portfolio := portfolio()
 
