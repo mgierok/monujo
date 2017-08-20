@@ -34,10 +34,12 @@ func main() {
 func mainMenu() {
 	fmt.Println("Choose action")
 	data := [][]interface{}{
-		[]interface{}{"1", "Summary"},
-		[]interface{}{"2", "Put transaction"},
-		[]interface{}{"3", "List transactions"},
-		[]interface{}{"4", "Update Quotes"},
+		[]interface{}{"S", "Summary"},
+		[]interface{}{"PT", "Put transaction"},
+		[]interface{}{"LT", "List transactions"},
+		[]interface{}{"PO", "Put operation"},
+		[]interface{}{"LO", "List operations"},
+		[]interface{}{"U", "Update Quotes"},
 		[]interface{}{"Q", "Quit"},
 	}
 
@@ -48,13 +50,17 @@ func mainMenu() {
 	action = strings.ToUpper(action)
 	console.Clear()
 
-	if action == "1" {
+	if action == "S" {
 		runAction(Summary)
-	} else if action == "2" {
+	} else if action == "PT" {
 		runAction(PutTransaction)
-	} else if action == "3" {
+	} else if action == "LT" {
 		runAction(Transactions)
-	} else if action == "4" {
+	} else if action == "PO" {
+		runAction(PutOperation)
+	} else if action == "LO" {
+		runAction(Operations)
+	} else if action == "U" {
 		runAction(Update)
 	} else if action == "Q" {
 		return
