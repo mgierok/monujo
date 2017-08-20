@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mgierok/monujo/action"
 	"github.com/mgierok/monujo/config"
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/db"
@@ -45,24 +46,24 @@ func mainMenu() {
 
 	console.DrawTable([]string{}, data)
 
-	var action string
-	fmt.Scanln(&action)
-	action = strings.ToUpper(action)
+	var a string
+	fmt.Scanln(&a)
+	a = strings.ToUpper(a)
 	console.Clear()
 
-	if action == "S" {
+	if a == "S" {
 		runAction(Summary)
-	} else if action == "PT" {
+	} else if a == "PT" {
 		runAction(PutTransaction)
-	} else if action == "LT" {
-		runAction(Transactions)
-	} else if action == "PO" {
+	} else if a == "LT" {
+		runAction(action.ListTransactions)
+	} else if a == "PO" {
 		runAction(PutOperation)
-	} else if action == "LO" {
-		runAction(Operations)
-	} else if action == "U" {
+	} else if a == "LO" {
+		runAction(action.ListOperations)
+	} else if a == "U" {
 		runAction(Update)
-	} else if action == "Q" {
+	} else if a == "Q" {
 		return
 	} else {
 		mainMenu()
