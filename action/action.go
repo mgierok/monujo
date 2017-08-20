@@ -238,15 +238,15 @@ func PutOperation() {
 	var o entity.Operation
 	o.PortfolioId = portfolio().PortfolioId
 	console.Clear()
-	o.Date = date()
+	o.Date = console.InputDate("Date", time.Now())
 	console.Clear()
 	o.Type = financialOperationType().Type
 	console.Clear()
-	o.Value = getFloat("Value")
+	o.Value = console.InputFloat("Value")
 	console.Clear()
-	o.Description = getString("Description", "dd")
+	o.Description = console.InputString("Description", "")
 	console.Clear()
-	o.Commision = getFloat("Commision", 0)
+	o.Commision = console.InputFloat("Commision", 0)
 	console.Clear()
 
 	summary := [][]interface{}{
@@ -420,29 +420,6 @@ func pickSource() entity.Sources {
 	return pickSource()
 }
 
-func date() time.Time {
-	const layout = "2006-01-02"
-	now := time.Now()
-	var input string
-
-	fmt.Printf("Date (default: %q): ", now.Format(layout))
-	fmt.Scanln(&input)
-	input = strings.Trim(input, " ")
-
-	if input == "" {
-		return now
-	} else {
-		t, err := time.Parse(layout, input)
-		if err != nil {
-			fmt.Println(err)
-			fmt.Printf("\n%q is not a valid date format\n\n", input)
-			return date()
-		} else {
-			return t
-		}
-	}
-}
-
 func financialOperationType() entity.FinancialOperationType {
 	fmt.Println("Choose operation type")
 	fmt.Println("")
@@ -479,43 +456,4 @@ func financialOperationType() entity.FinancialOperationType {
 		fmt.Printf("\n%s is not a valid operation type\n\n", ot)
 		return financialOperationType()
 	}
-}
-
-func getFloat(name string, args ...float64) float64 {
-	if len(args) == 1 {
-		fmt.Printf("%s (default %v): ", name, args[0])
-	} else {
-		fmt.Printf("%s: ", name)
-	}
-
-	var input string
-	fmt.Scanln(&input)
-
-	if input == "" {
-		return args[0]
-	}
-
-	f, err := strconv.ParseFloat(input, 64)
-
-	if err != nil {
-		fmt.Printf("\n%s is not a valid %s\n\n", input, strings.ToLower(name))
-		return getFloat(name)
-	}
-
-	return f
-}
-
-func getString(name string, defaultValue string) string {
-	fmt.Printf("%s: ", name)
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	input := scanner.Text()
-
-	input = strings.TrimSpace(input)
-
-	if input == "" {
-		input = defaultValue
-	}
-
-	return input
 }
