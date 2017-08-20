@@ -1,10 +1,13 @@
 package action
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
@@ -230,6 +233,46 @@ func Update() {
 	}
 }
 
+func PutOperation() {
+
+	var o entity.Operation
+	o.PortfolioId = portfolio().PortfolioId
+	console.Clear()
+	o.Date = date()
+	console.Clear()
+	o.Type = financialOperationType().Type
+	console.Clear()
+	o.Value = getFloat("Value")
+	console.Clear()
+	o.Description = getString("Description", "dd")
+	console.Clear()
+	o.Commision = getFloat("Commision", 0)
+	console.Clear()
+
+	summary := [][]interface{}{
+		[]interface{}{"Portfolio ID", o.PortfolioId},
+		[]interface{}{"Date", o.Date},
+		[]interface{}{"Operation type", o.Type},
+		[]interface{}{"Value", o.Value},
+		[]interface{}{"Description", o.Description},
+		[]interface{}{"Commision", o.Commision},
+	}
+
+	console.Clear()
+	console.DrawTable([]string{}, summary)
+	fmt.Println("")
+
+	if YesOrNo("Do you want to store this operation?") {
+		operationId, err := repository.StoreOperation(o)
+		log.PanicIfError(err)
+
+		fmt.Printf("Operation has been recorded with an ID: %d\n", operationId)
+	} else {
+		fmt.Println("Operation has not been recorded")
+	}
+
+}
+
 func pickTransaction(transactions entity.Transactions) entity.Transaction {
 	var input string
 	fmt.Print("Transaction ID: ")
@@ -375,4 +418,104 @@ func pickSource() entity.Sources {
 		}
 	}
 	return pickSource()
+}
+
+func date() time.Time {
+	const layout = "2006-01-02"
+	now := time.Now()
+	var input string
+
+	fmt.Printf("Date (default: %q): ", now.Format(layout))
+	fmt.Scanln(&input)
+	input = strings.Trim(input, " ")
+
+	if input == "" {
+		return now
+	} else {
+		t, err := time.Parse(layout, input)
+		if err != nil {
+			fmt.Println(err)
+			fmt.Printf("\n%q is not a valid date format\n\n", input)
+			return date()
+		} else {
+			return t
+		}
+	}
+}
+
+func financialOperationType() entity.FinancialOperationType {
+	fmt.Println("Choose operation type")
+	fmt.Println("")
+
+	ots, err := repository.FinancialOperationTypes()
+	log.PanicIfError(err)
+
+	header := []string{
+		"Operation type",
+	}
+
+	var dict = make(map[string]entity.FinancialOperationType)
+	var data [][]interface{}
+	for _, ot := range ots {
+		dict[ot.Type] = ot
+		data = append(data, []interface{}{ot.Type})
+	}
+
+	console.DrawTable(header, data)
+	fmt.Println("")
+
+	fmt.Print("Type: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	ot := scanner.Text()
+
+	ot = strings.TrimSpace(ot)
+	ot = strings.ToLower(ot)
+
+	_, exists := dict[ot]
+	if exists {
+		return dict[ot]
+	} else {
+		fmt.Printf("\n%s is not a valid operation type\n\n", ot)
+		return financialOperationType()
+	}
+}
+
+func getFloat(name string, args ...float64) float64 {
+	if len(args) == 1 {
+		fmt.Printf("%s (default %v): ", name, args[0])
+	} else {
+		fmt.Printf("%s: ", name)
+	}
+
+	var input string
+	fmt.Scanln(&input)
+
+	if input == "" {
+		return args[0]
+	}
+
+	f, err := strconv.ParseFloat(input, 64)
+
+	if err != nil {
+		fmt.Printf("\n%s is not a valid %s\n\n", input, strings.ToLower(name))
+		return getFloat(name)
+	}
+
+	return f
+}
+
+func getString(name string, defaultValue string) string {
+	fmt.Printf("%s: ", name)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	input := scanner.Text()
+
+	input = strings.TrimSpace(input)
+
+	if input == "" {
+		input = defaultValue
+	}
+
+	return input
 }

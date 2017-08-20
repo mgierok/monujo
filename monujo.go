@@ -58,7 +58,7 @@ func mainMenu() {
 	} else if a == "LT" {
 		runAction(action.ListTransactions)
 	} else if a == "PO" {
-		runAction(PutOperation)
+		runAction(action.PutOperation)
 	} else if a == "LO" {
 		runAction(action.ListOperations)
 	} else if a == "U" {
