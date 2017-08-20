@@ -234,7 +234,6 @@ func Update() {
 }
 
 func PutOperation() {
-
 	var o entity.Operation
 	o.PortfolioId = portfolio().PortfolioId
 	console.Clear()
@@ -271,6 +270,55 @@ func PutOperation() {
 		fmt.Println("Operation has not been recorded")
 	}
 
+}
+
+func PutTransaction() {
+	var t entity.Transaction
+	t.PortfolioId = portfolio().PortfolioId
+	console.Clear()
+	t.Date = console.InputDate("Date", time.Now())
+	console.Clear()
+	t.Ticker = console.InputString("Ticker")
+	console.Clear()
+	t.Price = console.InputFloat("Price")
+	console.Clear()
+	t.Currency = pickCurrency()
+	console.Clear()
+	t.Shares = shares()
+	console.Clear()
+	t.Commision = console.InputFloat("Commision", 0)
+	console.Clear()
+	t.ExchangeRate = console.InputFloat("Exchange rate", 1)
+	console.Clear()
+	t.Tax = console.InputFloat("Tax", 0)
+	console.Clear()
+
+	summary := [][]interface{}{
+		[]interface{}{"Portfolio ID", t.PortfolioId},
+		[]interface{}{"Date", t.Date},
+		[]interface{}{"Ticker", t.Ticker},
+		[]interface{}{"Price", t.Price},
+		[]interface{}{"Currency", t.Currency},
+		[]interface{}{"Shares", t.Shares},
+		[]interface{}{"Commision", t.Commision},
+		[]interface{}{"Exchange Rate", t.ExchangeRate},
+		[]interface{}{"Tax", t.Tax},
+	}
+
+	console.Clear()
+	console.DrawTable([]string{}, summary)
+	fmt.Println("")
+
+	if YesOrNo("Do you want to store this transaction?") {
+		transactionId, err := repository.StoreTransaction(t)
+		log.PanicIfError(err)
+
+		fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
+
+		securityDetails(t.Ticker)
+	} else {
+		fmt.Println("Transaction has not been recorded")
+	}
 }
 
 func pickTransaction(transactions entity.Transactions) entity.Transaction {
@@ -456,4 +504,92 @@ func financialOperationType() entity.FinancialOperationType {
 		fmt.Printf("\n%s is not a valid operation type\n\n", ot)
 		return financialOperationType()
 	}
+}
+
+func securityDetails(ticker string) {
+	exists, err := repository.SecurityExists(ticker)
+	log.PanicIfError(err)
+	if exists {
+		return
+	}
+
+	if !YesOrNo(fmt.Sprintf("Would you like to add %s security detials to the database?", strings.TrimSpace(ticker))) {
+		return
+	}
+
+	s := entity.Security{
+		Ticker: ticker,
+	}
+	s.ShortName = console.InputString("Short name")
+	s.FullName = console.InputString("Full name")
+	s.Market = console.InputString("Market")
+	s.Leverage = console.InputFloat("Leverage", 0)
+	s.QuotesSource = console.InputString("Quotes source")
+
+	t, err := repository.StoreSecurity(s)
+	log.PanicIfError(err)
+
+	fmt.Printf("Security details of %s has been stored\n", strings.TrimSpace(t))
+}
+
+func pickCurrency() string {
+	fmt.Println("Choose currency")
+	fmt.Println("")
+
+	currencies, err := repository.Currencies()
+	log.PanicIfError(err)
+
+	header := []string{
+		"Currency",
+	}
+
+	var dict = make(map[string]string)
+	var data [][]interface{}
+	for _, c := range currencies {
+		dict[c.Symbol] = c.Symbol
+		data = append(data, []interface{}{c.Symbol})
+	}
+
+	console.DrawTable(header, data)
+	fmt.Println("")
+
+	var c string
+	fmt.Print("Currency: ")
+	fmt.Scanln(&c)
+
+	c = strings.ToUpper(c)
+
+	_, exists := dict[c]
+	if exists {
+		return c
+	} else {
+		fmt.Printf("\n%s is not a valid currency\n\n", c)
+		return pickCurrency()
+	}
+}
+
+func shares() float64 {
+	s := console.InputFloat("Shares")
+
+	isShort := isShort()
+	if (isShort && s > 0) || (!isShort && s < 0) {
+		return 0 - s
+	}
+
+	return s
+}
+
+func isShort() bool {
+	var input string
+	fmt.Println("(B)UY or (S)ELL?")
+	fmt.Scanln(&input)
+	input = strings.ToUpper(input)
+
+	if "S" == input {
+		return true
+	} else if "B" == input {
+		return false
+	}
+
+	return isShort()
 }
