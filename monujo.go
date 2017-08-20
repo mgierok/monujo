@@ -62,7 +62,7 @@ func mainMenu() {
 	} else if a == "LO" {
 		runAction(action.ListOperations)
 	} else if a == "U" {
-		runAction(Update)
+		runAction(action.Update)
 	} else if a == "Q" {
 		return
 	} else {
