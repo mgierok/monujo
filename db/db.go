@@ -75,6 +75,7 @@ func Dump(dumptype string, file string) {
 			"--format",
 			"plain",
 			"--data-only",
+			"--inserts",
 			"--disable-triggers",
 			"--no-owner",
 			"--no-privileges",
