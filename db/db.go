@@ -43,7 +43,7 @@ func Dump(dumptype string, file string) {
 	var cmd *exec.Cmd
 	if dumptype == "schema" {
 		cmd = exec.Command(
-			"/usr/bin/pg_dump",
+			config.Sys().Pgdump,
 			"--host",
 			config.Db().Host,
 			"--port",
@@ -64,7 +64,7 @@ func Dump(dumptype string, file string) {
 		)
 	} else if dumptype == "data" {
 		cmd = exec.Command(
-			"/usr/bin/pg_dump",
+			config.Sys().Pgdump,
 			"--host",
 			config.Db().Host,
 			"--port",
