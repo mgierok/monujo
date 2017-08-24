@@ -23,6 +23,8 @@ type OwnedStock struct {
 	LastPriceBaseCurrency      sql.NullFloat64 `db:"last_price_base_currency"`
 	AveragePrice               float64         `db:"average_price"`
 	AveragePriceBaseCurrency   float64         `db:"average_price_base_currency"`
+	InvestmentBaseCurrency     sql.NullFloat64 `db:"investment_base_currency"`
+	MarketValueBaseCurrency    sql.NullFloat64 `db:"market_value_base_currency"`
 	Gain                       sql.NullFloat64 `db:"gain"`
 	PercentageGain             sql.NullFloat64 `db:"percentage_gain"`
 	GainBaseCurrency           sql.NullFloat64 `db:"gain_base_currency"`

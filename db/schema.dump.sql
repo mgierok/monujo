@@ -358,7 +358,8 @@ CREATE VIEW owned_stocks AS
         CASE
             WHEN (os.currency = p.currency) THEN (1)::numeric
             ELSE e.close
-        END), 2) AS market_value_base_currency
+        END), 2) AS market_value_base_currency,
+    round(os.expenditure_base_currency, 2) AS investment_base_currency
    FROM ((((owned_shares os
      JOIN portfolios p ON ((os.portfolio_id = p.portfolio_id)))
      LEFT JOIN securities s ON ((os.ticker = s.ticker)))
