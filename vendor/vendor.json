@@ -1,0 +1,49 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "AnTFhzM2BM64G/4cJxHChP/Agks=",
+			"path": "github.com/cep21/xdgbasedir",
+			"revision": "21470bfc93b9903bce0beaebb037b1d04d0be523",
+			"revisionTime": "2017-03-29T17:17:47Z"
+		},
+		{
+			"checksumSHA1": "SEZulQ/Gm4f6P6/c3waZjXxvl0g=",
+			"path": "github.com/jmoiron/sqlx",
+			"revision": "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f",
+			"revisionTime": "2017-04-30T19:46:03Z"
+		},
+		{
+			"checksumSHA1": "xXjxKqs3ECyWO5zjIVb2qgj9rcU=",
+			"path": "github.com/jmoiron/sqlx/reflectx",
+			"revision": "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f",
+			"revisionTime": "2017-04-30T19:46:03Z"
+		},
+		{
+			"checksumSHA1": "A3ymiEhz0WaT+sfK1aJhlqhf41o=",
+			"path": "github.com/lib/pq",
+			"revision": "e42267488fe361b9dc034be7a6bffef5b195bceb",
+			"revisionTime": "2017-08-10T06:12:20Z"
+		},
+		{
+			"checksumSHA1": "q5SZBWFVC3wOIzftf+l/h5WLG1k=",
+			"path": "github.com/lib/pq/oid",
+			"revision": "e42267488fe361b9dc034be7a6bffef5b195bceb",
+			"revisionTime": "2017-08-10T06:12:20Z"
+		},
+		{
+			"checksumSHA1": "cJE7dphDlam/i7PhnsyosNWtbd4=",
+			"path": "github.com/mattn/go-runewidth",
+			"revision": "97311d9f7767e3d6f422ea06661bc2c7a19e8a5d",
+			"revisionTime": "2017-05-10T07:48:58Z"
+		},
+		{
+			"checksumSHA1": "3DXd47ue3PGGyFBGXqXSOI/iIeI=",
+			"path": "github.com/olekukonko/tablewriter",
+			"revision": "be5337e7b39e64e5f91445ce7e721888dbab7387",
+			"revisionTime": "2017-07-19T10:10:40Z"
+		}
+	],
+	"rootPath": "github.com/mgierok/monujo"
+}
