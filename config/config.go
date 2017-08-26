@@ -1,10 +1,10 @@
 package config
 
 import (
-	"encoding/json"
 	"io/ioutil"
 
 	"github.com/cep21/xdgbasedir"
+	"github.com/json-iterator/go"
 )
 
 type dbConf struct {
@@ -38,7 +38,7 @@ func MustInitialize(env string) {
 		panic(err)
 	}
 
-	err = json.Unmarshal(dbConfigFile, &db)
+	err = jsoniter.Unmarshal(dbConfigFile, &db)
 	if err != nil {
 		panic(err)
 	}
@@ -53,7 +53,7 @@ func MustInitialize(env string) {
 		panic(err)
 	}
 
-	err = json.Unmarshal(sysConfigFile, &sys)
+	err = jsoniter.Unmarshal(sysConfigFile, &sys)
 	if err != nil {
 		panic(err)
 	}

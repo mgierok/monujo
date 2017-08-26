@@ -2,7 +2,6 @@ package entity
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/json-iterator/go"
 )
 
 type Source struct {
@@ -96,7 +97,7 @@ func ingturbo(securities Securities, quotes chan Quote) {
 		} else {
 			body, _ := ioutil.ReadAll(resp.Body)
 			var r response
-			_ = json.Unmarshal(body, &r)
+			_ = jsoniter.Unmarshal(body, &r)
 			v := r.BidQuotes[len(r.BidQuotes)-1][1]
 			quote := Quote{
 				Ticker:  s.Ticker,
@@ -146,7 +147,7 @@ func google(securities Securities, quotes chan Quote) {
 		body = body[4:] // remove comment sign at the beginning of response
 
 		var gQuotes []gQuote
-		_ = json.Unmarshal(body, &gQuotes)
+		_ = jsoniter.Unmarshal(body, &gQuotes)
 
 		for _, gQuote := range gQuotes {
 			v, _ := strconv.ParseFloat(gQuote.Quote, 64)
