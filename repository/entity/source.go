@@ -26,7 +26,7 @@ func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGr
 	} else if s.Name == "ingturbo" {
 		ingturbo(securities, quotes)
 	} else if s.Name == "google" {
-		google(securities, quotes)
+		stooq(securities, quotes)
 	}
 }
 
@@ -34,7 +34,6 @@ func stooq(securities Securities, quotes chan Quote) {
 	const layout = "20060102"
 	now := time.Now()
 	var client http.Client
-
 	for _, s := range securities {
 		resp, err := client.Get(
 			fmt.Sprintf(
