@@ -515,7 +515,7 @@ func securityDetails(ticker string) {
 	s.ShortName = console.InputString("Short name")
 	s.FullName = console.InputString("Full name")
 	s.Market = console.InputString("Market")
-	s.Leverage = console.InputFloat("Leverage", 0)
+	s.Leverage = console.InputFloat("Leverage", 1)
 	s.QuotesSource = console.InputString("Quotes source")
 
 	t, err := repository.StoreSecurity(s)
