@@ -73,7 +73,6 @@ func stooq(securities Securities, quotes chan Quote) {
 			}
 		}
 	}
-	// close(quotes)
 }
 
 func ingturbo(securities Securities, quotes chan Quote) {
@@ -112,7 +111,6 @@ func ingturbo(securities Securities, quotes chan Quote) {
 			quotes <- quote
 		}
 	}
-	// close(quotes)
 }
 
 func google(securities Securities, quotes chan Quote) {
@@ -167,5 +165,4 @@ func google(securities Securities, quotes chan Quote) {
 			quotes <- quote
 		}
 	}
-	// close(quotes)
 }
