@@ -19,8 +19,13 @@ type sysConf struct {
 	Pgdump string
 }
 
+type appConf struct {
+	Alphavantagekey string
+}
+
 var db dbConf
 var sys sysConf
+var app appConf
 
 func MustInitialize(env string) {
 	var suffix string
@@ -57,6 +62,21 @@ func MustInitialize(env string) {
 	if err != nil {
 		panic(err)
 	}
+
+	appConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/app.json" + suffix)
+	if err != nil {
+		panic(err)
+	}
+
+	appConfigFile, err := ioutil.ReadFile(appConfigFilePath)
+	if err != nil {
+		panic(err)
+	}
+
+	err = jsoniter.Unmarshal(appConfigFile, &app)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func Db() dbConf {
@@ -65,4 +85,8 @@ func Db() dbConf {
 
 func Sys() sysConf {
 	return sys
+}
+
+func App() appConf {
+	return app
 }

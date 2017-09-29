@@ -8,6 +8,7 @@ var sources = entity.Sources{
 	{Name: "stooq"},
 	{Name: "google"},
 	{Name: "ingturbo"},
+	{Name: "alphavantage"},
 }
 
 func Sources() entity.Sources {

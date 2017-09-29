@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/json-iterator/go"
+	"github.com/mgierok/monujo/config"
 )
 
 type Source struct {
@@ -27,6 +28,8 @@ func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGr
 		ingturbo(securities, quotes)
 	} else if s.Name == "google" {
 		stooq(securities, quotes)
+	} else if s.Name == "alphavantage" {
+		alphavantage(securities, quotes)
 	}
 }
 
@@ -109,6 +112,47 @@ func ingturbo(securities Securities, quotes chan Quote) {
 			}
 
 			quotes <- quote
+		}
+	}
+}
+
+func alphavantage(securities Securities, quotes chan Quote) {
+	var client http.Client
+	for _, s := range securities {
+		resp, err := client.Get(
+			fmt.Sprintf(
+				"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&apikey=%s&datatype=csv&symbol=%s",
+				config.App().Alphavantagekey,
+				strings.TrimSuffix(strings.TrimSpace(s.Ticker), ".US"),
+			),
+		)
+		if err != nil {
+			fmt.Printf("Update failed for %s\n", s.Ticker)
+		} else {
+			body, _ := ioutil.ReadAll(resp.Body)
+			csvBody := string(body)
+
+			r := csv.NewReader(strings.NewReader(csvBody))
+
+			records, err := r.ReadAll()
+			if err != nil {
+				fmt.Printf("Ticker: %s Error: %s\n", s.Ticker, err)
+			} else if len(records[0]) == 1 {
+				fmt.Printf("Ticker: %s Error: %s\n", s.Ticker, records[0][0])
+			} else {
+				quote := Quote{
+					Ticker:  s.Ticker,
+					Volume:  0,
+					OpenInt: 0,
+				}
+				quote.Date, _ = time.Parse("2006-01-02", records[1][0])
+				quote.Open, _ = strconv.ParseFloat(records[1][1], 64)
+				quote.High, _ = strconv.ParseFloat(records[1][2], 64)
+				quote.Low, _ = strconv.ParseFloat(records[1][3], 64)
+				quote.Close, _ = strconv.ParseFloat(records[1][4], 64)
+
+				quotes <- quote
+			}
 		}
 	}
 }
