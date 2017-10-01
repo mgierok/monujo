@@ -7,8 +7,8 @@ import (
 
 func StoreOperation(operation entity.Operation) (int64, error) {
 	stmt, err := db.Connection().PrepareNamed(`
-		INSERT INTO operations (portfolio_id, date, type, value, description, commision)
-		VALUES (:portfolio_id, :date, :type, :value, :description, :commision)
+		INSERT INTO operations (portfolio_id, date, type, value, description, commision, tax)
+		VALUES (:portfolio_id, :date, :type, :value, :description, :commision, :tax)
 		RETURNING operation_id
 	`)
 
@@ -30,7 +30,8 @@ func PortfolioOperations(portfolio entity.Portfolio) (entity.Operations, error) 
 		type,
 		value,
 		COALESCE(description, '') AS description,
-		commision
+		commision,
+		tax
 	FROM operations
 	WHERE portfolio_id = $1
 	ORDER BY

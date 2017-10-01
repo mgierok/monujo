@@ -239,6 +239,8 @@ func PutOperation() {
 	console.Clear()
 	o.Commision = console.InputFloat("Commision", 0)
 	console.Clear()
+	o.Tax = console.InputFloat("Tax", 0)
+	console.Clear()
 
 	summary := [][]interface{}{
 		[]interface{}{"Portfolio ID", o.PortfolioId},
@@ -247,6 +249,7 @@ func PutOperation() {
 		[]interface{}{"Value", o.Value},
 		[]interface{}{"Description", o.Description},
 		[]interface{}{"Commision", o.Commision},
+		[]interface{}{"Tax", o.Tax},
 	}
 
 	console.Clear()

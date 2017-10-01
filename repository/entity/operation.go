@@ -12,6 +12,7 @@ type Operation struct {
 	Value       float64   `db:"value"`
 	Description string    `db:"description"`
 	Commision   float64   `db:"commision"`
+	Tax         float64   `db:"tax"`
 }
 
 type Operations []Operation

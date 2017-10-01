@@ -225,7 +225,8 @@ CREATE TABLE operations (
     type financing_operation NOT NULL,
     value numeric,
     description character varying(128),
-    commision numeric DEFAULT 0 NOT NULL
+    commision numeric DEFAULT 0 NOT NULL,
+    tax numeric DEFAULT 0 NOT NULL
 );
 
 
