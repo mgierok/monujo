@@ -494,8 +494,8 @@ CREATE VIEW portfolios_ext AS
     round((COALESCE(gss.value, (0)::numeric) + COALESCE(oss.gain_of_owned_shares, (0)::numeric)), 2) AS estimated_gain,
     round((((COALESCE(gss.value, (0)::numeric) + COALESCE(oss.gain_of_owned_shares, (0)::numeric)) - e.commision) - e.tax), 2) AS estimated_gain_costs_inc,
     round((COALESCE(((((c.value - c.commision) - e.value) - e.commision) - e.tax), (0)::numeric) + COALESCE(oss.market_value_base_currency, (0)::numeric)), 2) AS estimated_value,
-    COALESCE(round((ab.income - ab.outcome)), (0)::numeric) AS annual_balance,
-    COALESCE(round((mb.income - mb.outcome)), (0)::numeric) AS month_balance
+    COALESCE(round((ab.income - ab.outcome), 2), (0)::numeric) AS annual_balance,
+    COALESCE(round((mb.income - mb.outcome), 2), (0)::numeric) AS month_balance
    FROM ((((((portfolios p
      LEFT JOIN cache c ON ((c.portfolio_id = p.portfolio_id)))
      LEFT JOIN expenditure e ON ((e.portfolio_id = p.portfolio_id)))
