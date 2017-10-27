@@ -28,6 +28,7 @@ func OwnedStocks() (entity.OwnedStocks, error) {
 			gain_base_currency,
 			percentage_gain_base_currency
 			FROM owned_stocks
+			ORDER BY portfolio_id
 			`)
 	return stocks, err
 }
