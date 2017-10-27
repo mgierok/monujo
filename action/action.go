@@ -58,7 +58,6 @@ func Summary() {
 
 	for _, pe := range portfoliosExt {
 		data = append(data, []interface{}{
-			pe.PortfolioId,
 			pe.Name,
 			pe.CacheValue,
 			pe.GainOfSoldShares,
@@ -72,7 +71,6 @@ func Summary() {
 	}
 
 	header = []string{
-		"Portfolio Id",
 		"Portfolio Name",
 		"Cache Value",
 		"Gain of Sold Shares",
