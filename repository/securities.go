@@ -34,7 +34,8 @@ func Securities(tickers []string) (entity.Securities, error) {
 				full_name,
 				market,
 				leverage,
-				quotes_source
+				quotes_source,
+				ticker_bankier
 			FROM securities
 			WHERE ticker IN (?)
 			`,
@@ -50,7 +51,8 @@ func Securities(tickers []string) (entity.Securities, error) {
 				full_name,
 				market,
 				leverage,
-				quotes_source
+				quotes_source,
+				ticker_bankier
 			FROM securities`
 		err = db.Connection().Select(&s, query)
 	}

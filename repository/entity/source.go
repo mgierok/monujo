@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,6 +31,8 @@ func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGr
 		stooq(securities, quotes)
 	} else if s.Name == "alphavantage" {
 		alphavantage(securities, quotes)
+	} else if s.Name == "bankier" {
+		bankier(securities, quotes)
 	}
 }
 
@@ -207,6 +210,79 @@ func google(securities Securities, quotes chan Quote) {
 			quote.Date, _ = time.Parse("2006-01-02T15:04:05Z", gQuote.Date)
 
 			quotes <- quote
+		}
+	}
+}
+
+func bankier(securities Securities, quotes chan Quote) {
+	type bQuote struct {
+		Open   float64
+		High   float64
+		Low    float64
+		Close  float64
+		Volume float64
+		Date   time.Time
+	}
+	var bQuotes = make(map[string]bQuote)
+	var client http.Client
+	var toFloat = func(s string) float64 {
+		s = strings.Replace(s, "&nbsp;", "", -1)
+		s = strings.Replace(s, ",", ".", -1)
+		v, _ := strconv.ParseFloat(s, 64)
+		return v
+	}
+
+	regex, _ := regexp.Compile(`(?sU)<td class="colWalor textNowrap">.+<a title=".+" href=".+">(.+)</a>.+<td class="colKurs change.+">(.+)</td>.+<td class="colObrot">(.+)</td>.+<td class="colOtwarcie">(.+)</td>.+<td class="calMaxi">(.+)</td>.+<td class="calMini">(.+)</td>.+<td class="colAktualizacja">(.+)</td>`)
+	urls := [2]string{
+		"https://www.bankier.pl/gielda/notowania/akcje",
+		"https://www.bankier.pl/gielda/notowania/new-connect",
+	}
+	for _, url := range urls {
+		resp, err := client.Get(url)
+		if err != nil {
+			fmt.Println(err)
+			fmt.Printf("Unable to read %s\n", url)
+		} else {
+			body, _ := ioutil.ReadAll(resp.Body)
+			matches := regex.FindAllStringSubmatch(string(body), -1)
+
+			for _, row := range matches {
+				close := toFloat(row[2])
+				volume := toFloat(row[3])
+				open := toFloat(row[4])
+				high := toFloat(row[5])
+				low := toFloat(row[6])
+				date, _ := time.Parse("2006.01.02 15:04", time.Now().Format("2006")+"."+row[7])
+
+				bQuotes[strings.ToUpper(row[1])] = bQuote{
+					Open:   open,
+					High:   high,
+					Low:    low,
+					Close:  close,
+					Volume: volume,
+					Date:   date,
+				}
+			}
+		}
+	}
+
+	for _, s := range securities {
+		q, ok := bQuotes[strings.Trim(s.TickerBankier.String, " ")]
+		if ok {
+			quote := Quote{
+				Ticker:  s.Ticker,
+				Open:    q.Open,
+				High:    q.High,
+				Low:     q.Low,
+				Close:   q.Close,
+				Volume:  q.Volume,
+				OpenInt: 0,
+				Date:    q.Date,
+			}
+
+			quotes <- quote
+		} else {
+			fmt.Printf("Update failed for %s\n", s.Ticker)
 		}
 	}
 }

@@ -47,7 +47,8 @@ CREATE TYPE quotes_source AS ENUM (
     'stooq',
     'google',
     'ingturbo',
-    'alphavantage'
+    'alphavantage',
+    'bankier'
 );
 
 
@@ -270,7 +271,8 @@ CREATE TABLE securities (
     full_name character varying(128) NOT NULL,
     market character varying(8) NOT NULL,
     leverage numeric DEFAULT 1 NOT NULL,
-    quotes_source quotes_source NOT NULL
+    quotes_source quotes_source NOT NULL,
+    ticker_bankier character(12)
 );
 
 
