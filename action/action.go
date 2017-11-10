@@ -2,6 +2,7 @@ package action
 
 import (
 	"bufio"
+	"database/sql"
 	"fmt"
 	"os"
 	"strconv"
@@ -518,6 +519,8 @@ func securityDetails(ticker string) {
 	s.Market = console.InputString("Market")
 	s.Leverage = console.InputFloat("Leverage", 1)
 	s.QuotesSource = console.InputString("Quotes source")
+	tb := console.InputString("Ticker Bankier", "")
+	s.TickerBankier = sql.NullString{String: tb, Valid: true}
 
 	t, err := repository.StoreSecurity(s)
 	log.PanicIfError(err)

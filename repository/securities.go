@@ -62,8 +62,8 @@ func Securities(tickers []string) (entity.Securities, error) {
 
 func StoreSecurity(s entity.Security) (string, error) {
 	stmt, err := db.Connection().PrepareNamed(`
-		INSERT INTO securities (ticker, short_name, full_name, market, leverage, quotes_source)
-		VALUES (:ticker, :short_name, :full_name, :market, :leverage, :quotes_source)
+		INSERT INTO securities (ticker, short_name, full_name, market, leverage, quotes_source, ticker_bankier)
+		VALUES (:ticker, :short_name, :full_name, :market, :leverage, :quotes_source, :ticker_bankier)
 		RETURNING ticker
 	`)
 
