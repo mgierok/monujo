@@ -267,6 +267,31 @@ func bankier(securities Securities, quotes chan Quote) {
 		}
 	}
 
+	regex, _ = regexp.Compile(`(?sU)<td class="colTicker"><a href="/fundusze/notowania/(.+)">.+<td class="colKurs">(.+)</td>.+<td class="colAktualizacja textNowrap">(.+)</td>`)
+	url := "https://www.bankier.pl/fundusze/notowania/wszystkie"
+	resp, err := client.Get(url)
+	if err != nil {
+		fmt.Println(err)
+		fmt.Printf("Unable to read %s\n", url)
+	} else {
+		body, _ := ioutil.ReadAll(resp.Body)
+		matches := regex.FindAllStringSubmatch(string(body), -1)
+
+		for _, row := range matches {
+			v := toFloat(row[2])
+			date, _ := time.Parse("2006-01-02", row[3])
+
+			bQuotes[strings.ToUpper(row[1])] = bQuote{
+				Open:   v,
+				High:   v,
+				Low:    v,
+				Close:  v,
+				Volume: 0,
+				Date:   date,
+			}
+		}
+	}
+
 	for _, s := range securities {
 		q, ok := bQuotes[strings.Trim(s.TickerBankier.String, " ")]
 		if ok {
