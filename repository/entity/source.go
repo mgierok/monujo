@@ -102,19 +102,23 @@ func ingturbo(securities Securities, quotes chan Quote) {
 			body, _ := ioutil.ReadAll(resp.Body)
 			var r response
 			_ = jsoniter.Unmarshal(body, &r)
-			v := r.BidQuotes[len(r.BidQuotes)-1][1]
-			quote := Quote{
-				Ticker:  s.Ticker,
-				Date:    time.Now(),
-				Open:    v,
-				High:    v,
-				Low:     v,
-				Close:   v,
-				Volume:  0,
-				OpenInt: 0,
-			}
+			if len(r.BidQuotes) == 0 {
+				fmt.Printf("Update failed for %s\n", s.Ticker)
+			} else {
+				v := r.BidQuotes[len(r.BidQuotes)-1][1]
+				quote := Quote{
+					Ticker:  s.Ticker,
+					Date:    time.Now(),
+					Open:    v,
+					High:    v,
+					Low:     v,
+					Close:   v,
+					Volume:  0,
+					OpenInt: 0,
+				}
 
-			quotes <- quote
+				quotes <- quote
+			}
 		}
 	}
 }
