@@ -16,10 +16,14 @@ import (
 	"github.com/mgierok/monujo/repository/entity"
 )
 
-type app struct{}
+type app struct {
+	console console.Console
+}
 
-func NewApp() (*app, error) {
-	return &app{}, nil
+func NewApp(c *console.Console) (*app, error) {
+	return &app{
+		console: *c,
+	}, nil
 }
 
 func (a *app) Run() {
@@ -38,12 +42,12 @@ func (a *app) mainMenu() {
 		[]interface{}{"Q", "Quit"},
 	}
 
-	console.DrawTable([]string{}, data)
+	a.console.DrawTable([]string{}, data)
 
 	var action string
 	fmt.Scanln(&action)
 	action = strings.ToUpper(action)
-	console.Clear()
+	a.console.Clear()
 
 	if action == "S" {
 		a.summary()
@@ -64,7 +68,7 @@ func (a *app) mainMenu() {
 	var input string
 	fmt.Scanln(&input)
 
-	console.Clear()
+	a.console.Clear()
 	a.mainMenu()
 }
 
@@ -100,7 +104,7 @@ func (a *app) summary() {
 		"Gain BC%",
 	}
 
-	console.DrawTable(header, data)
+	a.console.DrawTable(header, data)
 
 	data = data[0:0]
 	fmt.Println("")
@@ -135,7 +139,7 @@ func (a *app) summary() {
 		"Month Balance",
 	}
 
-	console.DrawTable(header, data)
+	a.console.DrawTable(header, data)
 }
 
 func (a *app) listTransactions() {
@@ -174,7 +178,7 @@ func (a *app) listTransactions() {
 		"Tax",
 	}
 
-	console.DrawTable(header, data)
+	a.console.DrawTable(header, data)
 	fmt.Println("")
 
 	if !a.yesOrNo("Do you want to delete single transaction?") {
@@ -217,7 +221,7 @@ func (a *app) listOperations() {
 		"Commision",
 	}
 
-	console.DrawTable(header, data)
+	a.console.DrawTable(header, data)
 	fmt.Println("")
 
 	if !a.yesOrNo("Do you want to delete single financial operation?") {
@@ -279,19 +283,19 @@ func (a *app) update() {
 func (a *app) putOperation() {
 	var o entity.Operation
 	o.PortfolioId = a.portfolio().PortfolioId
-	console.Clear()
-	o.Date = console.InputDate("Date", time.Now())
-	console.Clear()
+	a.console.Clear()
+	o.Date = a.console.InputDate("Date", time.Now())
+	a.console.Clear()
 	o.Type = a.financialOperationType().Type
-	console.Clear()
-	o.Value = console.InputFloat("Value")
-	console.Clear()
-	o.Description = console.InputString("Description", "")
-	console.Clear()
-	o.Commision = console.InputFloat("Commision", 0)
-	console.Clear()
-	o.Tax = console.InputFloat("Tax", 0)
-	console.Clear()
+	a.console.Clear()
+	o.Value = a.console.InputFloat("Value")
+	a.console.Clear()
+	o.Description = a.console.InputString("Description", "")
+	a.console.Clear()
+	o.Commision = a.console.InputFloat("Commision", 0)
+	a.console.Clear()
+	o.Tax = a.console.InputFloat("Tax", 0)
+	a.console.Clear()
 
 	summary := [][]interface{}{
 		[]interface{}{"Portfolio ID", o.PortfolioId},
@@ -303,8 +307,8 @@ func (a *app) putOperation() {
 		[]interface{}{"Tax", o.Tax},
 	}
 
-	console.Clear()
-	console.DrawTable([]string{}, summary)
+	a.console.Clear()
+	a.console.DrawTable([]string{}, summary)
 	fmt.Println("")
 
 	if a.yesOrNo("Do you want to store this operation?") {
@@ -321,23 +325,23 @@ func (a *app) putOperation() {
 func (a *app) putTransaction() {
 	var t entity.Transaction
 	t.PortfolioId = a.portfolio().PortfolioId
-	console.Clear()
-	t.Date = console.InputDate("Date", time.Now())
-	console.Clear()
-	t.Ticker = console.InputString("Ticker")
-	console.Clear()
-	t.Price = console.InputFloat("Price")
-	console.Clear()
+	a.console.Clear()
+	t.Date = a.console.InputDate("Date", time.Now())
+	a.console.Clear()
+	t.Ticker = a.console.InputString("Ticker")
+	a.console.Clear()
+	t.Price = a.console.InputFloat("Price")
+	a.console.Clear()
 	t.Currency = a.pickCurrency()
-	console.Clear()
+	a.console.Clear()
 	t.Shares = a.shares()
-	console.Clear()
-	t.Commision = console.InputFloat("Commision", 0)
-	console.Clear()
-	t.ExchangeRate = console.InputFloat("Exchange rate", 1)
-	console.Clear()
-	t.Tax = console.InputFloat("Tax", 0)
-	console.Clear()
+	a.console.Clear()
+	t.Commision = a.console.InputFloat("Commision", 0)
+	a.console.Clear()
+	t.ExchangeRate = a.console.InputFloat("Exchange rate", 1)
+	a.console.Clear()
+	t.Tax = a.console.InputFloat("Tax", 0)
+	a.console.Clear()
 
 	summary := [][]interface{}{
 		[]interface{}{"Portfolio ID", t.PortfolioId},
@@ -351,8 +355,8 @@ func (a *app) putTransaction() {
 		[]interface{}{"Tax", t.Tax},
 	}
 
-	console.Clear()
-	console.DrawTable([]string{}, summary)
+	a.console.Clear()
+	a.console.DrawTable([]string{}, summary)
 	fmt.Println("")
 
 	if a.yesOrNo("Do you want to store this transaction?") {
@@ -445,7 +449,7 @@ func (a *app) portfolio() entity.Portfolio {
 		data = append(data, []interface{}{p.PortfolioId, p.Name})
 	}
 
-	console.DrawTable(header, data)
+	a.console.DrawTable(header, data)
 	fmt.Println("")
 
 	var input string
@@ -488,12 +492,12 @@ func (a *app) pickSource() entity.Sources {
 	}
 	data = append(data, []interface{}{"Q", "Quit"})
 
-	console.DrawTable([]string{}, data)
+	a.console.DrawTable([]string{}, data)
 	fmt.Println("")
 
 	var input string
 	fmt.Scanln(&input)
-	console.Clear()
+	a.console.Clear()
 
 	input = strings.ToUpper(input)
 
@@ -532,7 +536,7 @@ func (a *app) financialOperationType() entity.FinancialOperationType {
 		data = append(data, []interface{}{ot.Type})
 	}
 
-	console.DrawTable(header, data)
+	a.console.DrawTable(header, data)
 	fmt.Println("")
 
 	fmt.Print("Type: ")
@@ -566,12 +570,12 @@ func (a *app) securityDetails(ticker string) {
 	s := entity.Security{
 		Ticker: ticker,
 	}
-	s.ShortName = console.InputString("Short name")
-	s.FullName = console.InputString("Full name")
-	s.Market = console.InputString("Market")
-	s.Leverage = console.InputFloat("Leverage", 1)
-	s.QuotesSource = console.InputString("Quotes source")
-	tb := console.InputString("Ticker Bankier", "")
+	s.ShortName = a.console.InputString("Short name")
+	s.FullName = a.console.InputString("Full name")
+	s.Market = a.console.InputString("Market")
+	s.Leverage = a.console.InputFloat("Leverage", 1)
+	s.QuotesSource = a.console.InputString("Quotes source")
+	tb := a.console.InputString("Ticker Bankier", "")
 	s.TickerBankier = sql.NullString{String: tb, Valid: true}
 
 	t, err := repository.StoreSecurity(s)
@@ -598,7 +602,7 @@ func (a *app) pickCurrency() string {
 		data = append(data, []interface{}{c.Symbol})
 	}
 
-	console.DrawTable(header, data)
+	a.console.DrawTable(header, data)
 	fmt.Println("")
 
 	var c string
@@ -617,7 +621,7 @@ func (a *app) pickCurrency() string {
 }
 
 func (a *app) shares() float64 {
-	s := console.InputFloat("Shares")
+	s := a.console.InputFloat("Shares")
 
 	isShort := a.isShort()
 	if (isShort && s > 0) || (!isShort && s < 0) {

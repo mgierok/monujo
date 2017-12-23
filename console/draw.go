@@ -10,12 +10,12 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-func DrawTable(header []string, data [][]interface{}) {
+func (c *Console) DrawTable(header []string, data [][]interface{}) {
 	newData := make([][]string, len(data))
 	for i, r := range data {
 		newData[i] = make([]string, len(data[i]))
 		for j, e := range r {
-			newData[i][j] = Sprint(e)
+			newData[i][j] = c.Sprint(e)
 		}
 	}
 
@@ -26,7 +26,7 @@ func DrawTable(header []string, data [][]interface{}) {
 	table.Render()
 }
 
-func Sprint(v interface{}) string {
+func (c *Console) Sprint(v interface{}) string {
 	s := ""
 	switch v.(type) {
 	case sql.NullFloat64:
@@ -50,7 +50,7 @@ func Sprint(v interface{}) string {
 	return s
 }
 
-func Clear() {
+func (c *Console) Clear() {
 	cmd := exec.Command("clear")
 	cmd.Stdout = os.Stdout
 	cmd.Run()

@@ -5,6 +5,7 @@ import (
 
 	"github.com/mgierok/monujo/app"
 	"github.com/mgierok/monujo/config"
+	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/db"
 )
 
@@ -25,7 +26,8 @@ func main() {
 	if len(dump) > 0 {
 		db.Dump(dump, file)
 	} else {
-		a, _ := app.NewApp()
+		c, _ := console.NewConsole()
+		a, _ := app.NewApp(c)
 		a.Run()
 	}
 }
