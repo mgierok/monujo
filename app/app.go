@@ -16,11 +16,17 @@ import (
 	"github.com/mgierok/monujo/repository/entity"
 )
 
-func Run() {
-	mainMenu()
+type app struct{}
+
+func NewApp() (*app, error) {
+	return &app{}, nil
 }
 
-func mainMenu() {
+func (a *app) Run() {
+	a.mainMenu()
+}
+
+func (a *app) mainMenu() {
 	fmt.Println("Choose action")
 	data := [][]interface{}{
 		[]interface{}{"S", "Summary"},
@@ -34,42 +40,35 @@ func mainMenu() {
 
 	console.DrawTable([]string{}, data)
 
-	var a string
-	fmt.Scanln(&a)
-	a = strings.ToUpper(a)
+	var action string
+	fmt.Scanln(&action)
+	action = strings.ToUpper(action)
 	console.Clear()
 
-	if a == "S" {
-		runAction(summary)
-	} else if a == "PT" {
-		runAction(putTransaction)
-	} else if a == "LT" {
-		runAction(listTransactions)
-	} else if a == "PO" {
-		runAction(putOperation)
-	} else if a == "LO" {
-		runAction(listOperations)
-	} else if a == "U" {
-		runAction(update)
-	} else if a == "Q" {
+	if action == "S" {
+		a.summary()
+	} else if action == "PT" {
+		a.putTransaction()
+	} else if action == "LT" {
+		a.listTransactions()
+	} else if action == "PO" {
+		a.putOperation()
+	} else if action == "LO" {
+		a.listOperations()
+	} else if action == "U" {
+		a.update()
+	} else if action == "Q" {
 		return
-	} else {
-		mainMenu()
 	}
-}
 
-func runAction(f func()) {
-	console.Clear()
-	f()
-
-	// type something to continue TODO how to detect enter key?
 	var input string
 	fmt.Scanln(&input)
 
-	mainMenu()
+	console.Clear()
+	a.mainMenu()
 }
 
-func summary() {
+func (a *app) summary() {
 	ownedStocks, err := repository.OwnedStocks()
 	log.PanicIfError(err)
 
@@ -139,8 +138,8 @@ func summary() {
 	console.DrawTable(header, data)
 }
 
-func listTransactions() {
-	portfolio := portfolio()
+func (a *app) listTransactions() {
+	portfolio := a.portfolio()
 
 	transactions, err := repository.PortfolioTransactions(portfolio)
 	log.PanicIfError(err)
@@ -178,18 +177,18 @@ func listTransactions() {
 	console.DrawTable(header, data)
 	fmt.Println("")
 
-	if !yesOrNo("Do you want to delete single transaction?") {
+	if !a.yesOrNo("Do you want to delete single transaction?") {
 		return
 	}
 
-	transaction := pickTransaction(transactions)
+	transaction := a.pickTransaction(transactions)
 	err = repository.DeleteTransaction(transaction)
 	log.PanicIfError(err)
 	fmt.Println("Transaction has been removed")
 }
 
-func listOperations() {
-	portfolio := portfolio()
+func (a *app) listOperations() {
+	portfolio := a.portfolio()
 
 	operations, err := repository.PortfolioOperations(portfolio)
 	log.PanicIfError(err)
@@ -221,17 +220,17 @@ func listOperations() {
 	console.DrawTable(header, data)
 	fmt.Println("")
 
-	if !yesOrNo("Do you want to delete single financial operation?") {
+	if !a.yesOrNo("Do you want to delete single financial operation?") {
 		return
 	}
 
-	operation := pickOperation(operations)
+	operation := a.pickOperation(operations)
 	err = repository.DeleteOperation(operation)
 	log.PanicIfError(err)
 	fmt.Println("Operation has been removed")
 }
 
-func update() {
+func (a *app) update() {
 	ownedStocks, err := repository.OwnedStocks()
 	log.PanicIfError(err)
 	currencies, err := repository.Currencies()
@@ -254,7 +253,7 @@ func update() {
 
 	var wg sync.WaitGroup
 	quotes := make(chan entity.Quote)
-	for _, source := range pickSource() {
+	for _, source := range a.pickSource() {
 		securities := importMap[source.Name]
 		if len(securities) > 0 {
 			wg.Add(1)
@@ -277,13 +276,13 @@ func update() {
 	}
 }
 
-func putOperation() {
+func (a *app) putOperation() {
 	var o entity.Operation
-	o.PortfolioId = portfolio().PortfolioId
+	o.PortfolioId = a.portfolio().PortfolioId
 	console.Clear()
 	o.Date = console.InputDate("Date", time.Now())
 	console.Clear()
-	o.Type = financialOperationType().Type
+	o.Type = a.financialOperationType().Type
 	console.Clear()
 	o.Value = console.InputFloat("Value")
 	console.Clear()
@@ -308,7 +307,7 @@ func putOperation() {
 	console.DrawTable([]string{}, summary)
 	fmt.Println("")
 
-	if yesOrNo("Do you want to store this operation?") {
+	if a.yesOrNo("Do you want to store this operation?") {
 		operationId, err := repository.StoreOperation(o)
 		log.PanicIfError(err)
 
@@ -319,9 +318,9 @@ func putOperation() {
 
 }
 
-func putTransaction() {
+func (a *app) putTransaction() {
 	var t entity.Transaction
-	t.PortfolioId = portfolio().PortfolioId
+	t.PortfolioId = a.portfolio().PortfolioId
 	console.Clear()
 	t.Date = console.InputDate("Date", time.Now())
 	console.Clear()
@@ -329,9 +328,9 @@ func putTransaction() {
 	console.Clear()
 	t.Price = console.InputFloat("Price")
 	console.Clear()
-	t.Currency = pickCurrency()
+	t.Currency = a.pickCurrency()
 	console.Clear()
-	t.Shares = shares()
+	t.Shares = a.shares()
 	console.Clear()
 	t.Commision = console.InputFloat("Commision", 0)
 	console.Clear()
@@ -356,19 +355,19 @@ func putTransaction() {
 	console.DrawTable([]string{}, summary)
 	fmt.Println("")
 
-	if yesOrNo("Do you want to store this transaction?") {
+	if a.yesOrNo("Do you want to store this transaction?") {
 		transactionId, err := repository.StoreTransaction(t)
 		log.PanicIfError(err)
 
 		fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
 
-		securityDetails(t.Ticker)
+		a.securityDetails(t.Ticker)
 	} else {
 		fmt.Println("Transaction has not been recorded")
 	}
 }
 
-func pickTransaction(transactions entity.Transactions) entity.Transaction {
+func (a *app) pickTransaction(transactions entity.Transactions) entity.Transaction {
 	var input string
 	fmt.Print("Transaction ID: ")
 	fmt.Scanln(&input)
@@ -377,7 +376,7 @@ func pickTransaction(transactions entity.Transactions) entity.Transaction {
 
 	if nil != err {
 		fmt.Printf("\n%s is not a valid transaction ID\n\n", input)
-		return pickTransaction(transactions)
+		return a.pickTransaction(transactions)
 	} else {
 		for _, t := range transactions {
 			if t.TransactionId == transactionId {
@@ -386,11 +385,11 @@ func pickTransaction(transactions entity.Transactions) entity.Transaction {
 		}
 
 		fmt.Printf("\n%s is not a valid transaction ID\n\n", input)
-		return pickTransaction(transactions)
+		return a.pickTransaction(transactions)
 	}
 }
 
-func pickOperation(operations entity.Operations) entity.Operation {
+func (a *app) pickOperation(operations entity.Operations) entity.Operation {
 	var input string
 	fmt.Print("Operation ID: ")
 	fmt.Scanln(&input)
@@ -399,7 +398,7 @@ func pickOperation(operations entity.Operations) entity.Operation {
 
 	if nil != err {
 		fmt.Printf("\n%s is not a valid operation ID\n\n", input)
-		return pickOperation(operations)
+		return a.pickOperation(operations)
 	} else {
 		for _, o := range operations {
 			if o.OperationId == operationId {
@@ -408,11 +407,11 @@ func pickOperation(operations entity.Operations) entity.Operation {
 		}
 
 		fmt.Printf("\n%s is not a valid operation ID\n\n", input)
-		return pickOperation(operations)
+		return a.pickOperation(operations)
 	}
 }
 
-func yesOrNo(question string) bool {
+func (a *app) yesOrNo(question string) bool {
 	fmt.Println(question)
 	fmt.Println("(Y)es or (N)o?")
 
@@ -426,10 +425,10 @@ func yesOrNo(question string) bool {
 		return false
 	}
 
-	return yesOrNo(question)
+	return a.yesOrNo(question)
 }
 
-func portfolio() entity.Portfolio {
+func (a *app) portfolio() entity.Portfolio {
 	fmt.Println("Choose portfolio")
 	fmt.Println("")
 
@@ -457,7 +456,7 @@ func portfolio() entity.Portfolio {
 
 	if nil != err {
 		fmt.Printf("\n%s is not a valid portfolio ID\n\n", input)
-		return portfolio()
+		return a.portfolio()
 	} else {
 		for _, p := range portfolios {
 			if p.PortfolioId == portfolioId {
@@ -466,11 +465,11 @@ func portfolio() entity.Portfolio {
 		}
 
 		fmt.Printf("\n%s is not a valid portfolio ID\n\n", input)
-		return portfolio()
+		return a.portfolio()
 	}
 }
 
-func pickSource() entity.Sources {
+func (a *app) pickSource() entity.Sources {
 	fmt.Println("Choose from which source you want to update quotes")
 	fmt.Println("")
 
@@ -512,10 +511,10 @@ func pickSource() entity.Sources {
 			}
 		}
 	}
-	return pickSource()
+	return a.pickSource()
 }
 
-func financialOperationType() entity.FinancialOperationType {
+func (a *app) financialOperationType() entity.FinancialOperationType {
 	fmt.Println("Choose operation type")
 	fmt.Println("")
 
@@ -549,18 +548,18 @@ func financialOperationType() entity.FinancialOperationType {
 		return dict[ot]
 	} else {
 		fmt.Printf("\n%s is not a valid operation type\n\n", ot)
-		return financialOperationType()
+		return a.financialOperationType()
 	}
 }
 
-func securityDetails(ticker string) {
+func (a *app) securityDetails(ticker string) {
 	exists, err := repository.SecurityExists(ticker)
 	log.PanicIfError(err)
 	if exists {
 		return
 	}
 
-	if !yesOrNo(fmt.Sprintf("Would you like to add %s security detials to the database?", strings.TrimSpace(ticker))) {
+	if !a.yesOrNo(fmt.Sprintf("Would you like to add %s security detials to the database?", strings.TrimSpace(ticker))) {
 		return
 	}
 
@@ -581,7 +580,7 @@ func securityDetails(ticker string) {
 	fmt.Printf("Security details of %s has been stored\n", strings.TrimSpace(t))
 }
 
-func pickCurrency() string {
+func (a *app) pickCurrency() string {
 	fmt.Println("Choose currency")
 	fmt.Println("")
 
@@ -613,14 +612,14 @@ func pickCurrency() string {
 		return c
 	} else {
 		fmt.Printf("\n%s is not a valid currency\n\n", c)
-		return pickCurrency()
+		return a.pickCurrency()
 	}
 }
 
-func shares() float64 {
+func (a *app) shares() float64 {
 	s := console.InputFloat("Shares")
 
-	isShort := isShort()
+	isShort := a.isShort()
 	if (isShort && s > 0) || (!isShort && s < 0) {
 		return 0 - s
 	}
@@ -628,7 +627,7 @@ func shares() float64 {
 	return s
 }
 
-func isShort() bool {
+func (a *app) isShort() bool {
 	var input string
 	fmt.Println("(B)UY or (S)ELL?")
 	fmt.Scanln(&input)
@@ -640,5 +639,5 @@ func isShort() bool {
 		return false
 	}
 
-	return isShort()
+	return a.isShort()
 }
