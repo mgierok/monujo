@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/mgierok/monujo/action"
+	"github.com/mgierok/monujo/app"
 	"github.com/mgierok/monujo/config"
 	"github.com/mgierok/monujo/db"
 )
@@ -25,6 +25,6 @@ func main() {
 	if len(dump) > 0 {
 		db.Dump(dump, file)
 	} else {
-		action.Run()
+		app.Run()
 	}
 }
