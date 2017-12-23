@@ -16,7 +16,60 @@ import (
 	"github.com/mgierok/monujo/repository/entity"
 )
 
-func Summary() {
+func Run() {
+	mainMenu()
+}
+
+func mainMenu() {
+	fmt.Println("Choose action")
+	data := [][]interface{}{
+		[]interface{}{"S", "Summary"},
+		[]interface{}{"PT", "Put transaction"},
+		[]interface{}{"LT", "List transactions"},
+		[]interface{}{"PO", "Put operation"},
+		[]interface{}{"LO", "List operations"},
+		[]interface{}{"U", "Update Quotes"},
+		[]interface{}{"Q", "Quit"},
+	}
+
+	console.DrawTable([]string{}, data)
+
+	var a string
+	fmt.Scanln(&a)
+	a = strings.ToUpper(a)
+	console.Clear()
+
+	if a == "S" {
+		runAction(summary)
+	} else if a == "PT" {
+		runAction(putTransaction)
+	} else if a == "LT" {
+		runAction(listTransactions)
+	} else if a == "PO" {
+		runAction(putOperation)
+	} else if a == "LO" {
+		runAction(listOperations)
+	} else if a == "U" {
+		runAction(update)
+	} else if a == "Q" {
+		return
+	} else {
+		mainMenu()
+	}
+}
+
+func runAction(f func()) {
+	console.Clear()
+	f()
+
+	// type something to continue TODO how to detect enter key?
+	var input string
+	fmt.Scanln(&input)
+
+	mainMenu()
+}
+
+func summary() {
 	ownedStocks, err := repository.OwnedStocks()
 	log.PanicIfError(err)
 
@@ -86,7 +139,7 @@ func Summary() {
 	console.DrawTable(header, data)
 }
 
-func ListTransactions() {
+func listTransactions() {
 	portfolio := portfolio()
 
 	transactions, err := repository.PortfolioTransactions(portfolio)
@@ -125,7 +178,7 @@ func ListTransactions() {
 	console.DrawTable(header, data)
 	fmt.Println("")
 
-	if !YesOrNo("Do you want to delete single transaction?") {
+	if !yesOrNo("Do you want to delete single transaction?") {
 		return
 	}
 
@@ -135,7 +188,7 @@ func ListTransactions() {
 	fmt.Println("Transaction has been removed")
 }
 
-func ListOperations() {
+func listOperations() {
 	portfolio := portfolio()
 
 	operations, err := repository.PortfolioOperations(portfolio)
@@ -168,7 +221,7 @@ func ListOperations() {
 	console.DrawTable(header, data)
 	fmt.Println("")
 
-	if !YesOrNo("Do you want to delete single financial operation?") {
+	if !yesOrNo("Do you want to delete single financial operation?") {
 		return
 	}
 
@@ -178,7 +231,7 @@ func ListOperations() {
 	fmt.Println("Operation has been removed")
 }
 
-func Update() {
+func update() {
 	ownedStocks, err := repository.OwnedStocks()
 	log.PanicIfError(err)
 	currencies, err := repository.Currencies()
@@ -224,7 +277,7 @@ func Update() {
 	}
 }
 
-func PutOperation() {
+func putOperation() {
 	var o entity.Operation
 	o.PortfolioId = portfolio().PortfolioId
 	console.Clear()
@@ -255,7 +308,7 @@ func PutOperation() {
 	console.DrawTable([]string{}, summary)
 	fmt.Println("")
 
-	if YesOrNo("Do you want to store this operation?") {
+	if yesOrNo("Do you want to store this operation?") {
 		operationId, err := repository.StoreOperation(o)
 		log.PanicIfError(err)
 
@@ -266,7 +319,7 @@ func PutOperation() {
 
 }
 
-func PutTransaction() {
+func putTransaction() {
 	var t entity.Transaction
 	t.PortfolioId = portfolio().PortfolioId
 	console.Clear()
@@ -303,7 +356,7 @@ func PutTransaction() {
 	console.DrawTable([]string{}, summary)
 	fmt.Println("")
 
-	if YesOrNo("Do you want to store this transaction?") {
+	if yesOrNo("Do you want to store this transaction?") {
 		transactionId, err := repository.StoreTransaction(t)
 		log.PanicIfError(err)
 
@@ -359,7 +412,7 @@ func pickOperation(operations entity.Operations) entity.Operation {
 	}
 }
 
-func YesOrNo(question string) bool {
+func yesOrNo(question string) bool {
 	fmt.Println(question)
 	fmt.Println("(Y)es or (N)o?")
 
@@ -373,7 +426,7 @@ func YesOrNo(question string) bool {
 		return false
 	}
 
-	return YesOrNo(question)
+	return yesOrNo(question)
 }
 
 func portfolio() entity.Portfolio {
@@ -507,7 +560,7 @@ func securityDetails(ticker string) {
 		return
 	}
 
-	if !YesOrNo(fmt.Sprintf("Would you like to add %s security detials to the database?", strings.TrimSpace(ticker))) {
+	if !yesOrNo(fmt.Sprintf("Would you like to add %s security detials to the database?", strings.TrimSpace(ticker))) {
 		return
 	}
 
