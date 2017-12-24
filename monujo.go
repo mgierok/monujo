@@ -22,15 +22,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	db.MustInitialize(conf.Db())
 
-	defer db.Connection().Close()
+	connection, err := db.New(conf.Db())
+	if err != nil {
+		panic(err)
+	}
+
+	defer connection.Connection().Close()
 
 	if len(dump) > 0 {
 		db.Dump(conf.Db(), conf.Sys(), dump, file)
 	} else {
 		console, _ := console.New()
-		a, _ := app.New(conf.App(), console, console, db.Connection())
+		a, _ := app.New(conf.App(), console, console, connection.Connection())
 		a.Run()
 	}
 }

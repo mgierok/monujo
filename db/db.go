@@ -12,7 +12,11 @@ import (
 
 var db *sqlx.DB
 
-func MustInitialize(c config.Db) {
+type Db struct {
+	connection *sqlx.DB
+}
+
+func New(c config.Db) (*Db, error) {
 	dbinfo := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		c.Host,
@@ -22,18 +26,18 @@ func MustInitialize(c config.Db) {
 		c.Dbname,
 	)
 
-	var err error
-	db, err = sqlx.Connect("postgres", dbinfo)
+	db, err := sqlx.Connect("postgres", dbinfo)
 
-	if err != nil {
-		panic(err)
-	}
+	return &Db{
+		connection: db,
+	}, err
 }
 
-func Connection() *sqlx.DB {
-	return db
+func (d *Db) Connection() *sqlx.DB {
+	return d.connection
 }
 
+// ToDo this does not look preety
 func Dump(d config.Db, s config.Sys, dumptype string, file string) {
 	if len(file) == 0 {
 		fmt.Println("Output file is not set")
