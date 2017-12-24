@@ -27,7 +27,7 @@ func main() {
 		db.Dump(dump, file)
 	} else {
 		c, _ := console.New()
-		a, _ := app.New(c)
+		a, _ := app.New(c, c)
 		a.Run()
 	}
 }

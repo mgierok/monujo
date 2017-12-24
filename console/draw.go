@@ -15,7 +15,7 @@ func (c *Console) DrawTable(header []string, data [][]interface{}) {
 	for i, r := range data {
 		newData[i] = make([]string, len(data[i]))
 		for j, e := range r {
-			newData[i][j] = c.Sprint(e)
+			newData[i][j] = c.toString(e)
 		}
 	}
 
@@ -26,7 +26,13 @@ func (c *Console) DrawTable(header []string, data [][]interface{}) {
 	table.Render()
 }
 
-func (c *Console) Sprint(v interface{}) string {
+func (c *Console) Clear() {
+	cmd := exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+}
+
+func (c *Console) toString(v interface{}) string {
 	s := ""
 	switch v.(type) {
 	case sql.NullFloat64:
@@ -48,10 +54,4 @@ func (c *Console) Sprint(v interface{}) string {
 	}
 
 	return s
-}
-
-func (c *Console) Clear() {
-	cmd := exec.Command("clear")
-	cmd.Stdout = os.Stdout
-	cmd.Run()
 }

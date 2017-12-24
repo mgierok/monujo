@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (c *Console) InputFloat(name string, args ...float64) float64 {
+func (c *Console) Float(name string, args ...float64) float64 {
 	if len(args) == 1 {
 		fmt.Printf("%s (default: %v): ", name, args[0])
 	} else {
@@ -27,13 +27,13 @@ func (c *Console) InputFloat(name string, args ...float64) float64 {
 
 	if err != nil {
 		fmt.Printf("\n%s is not a valid %s\n\n", input, strings.ToLower(name))
-		return c.InputFloat(name, args...)
+		return c.Float(name, args...)
 	}
 
 	return f
 }
 
-func (c *Console) InputString(name string, args ...string) string {
+func (c *Console) String(name string, args ...string) string {
 	if len(args) == 1 {
 		fmt.Printf("%s (default: %v): ", name, args[0])
 	} else {
@@ -51,7 +51,7 @@ func (c *Console) InputString(name string, args ...string) string {
 	return input
 }
 
-func (c *Console) InputDate(name string, args ...time.Time) time.Time {
+func (c *Console) Date(name string, args ...time.Time) time.Time {
 	const layout = "2006-01-02"
 
 	if len(args) == 1 {
@@ -71,7 +71,7 @@ func (c *Console) InputDate(name string, args ...time.Time) time.Time {
 		if err != nil {
 			fmt.Println(err)
 			fmt.Printf("\n%q is not a valid date format\n\n", input)
-			return c.InputDate(name, args...)
+			return c.Date(name, args...)
 
 		} else {
 			return t
