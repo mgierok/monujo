@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mgierok/monujo/config"
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
 	"github.com/mgierok/monujo/repository"
@@ -28,13 +29,15 @@ type Input interface {
 }
 
 type app struct {
+	config  config.App
 	console console.Console
 	screen  Screen
 	input   Input
 }
 
-func New(s Screen, i Input) (*app, error) {
+func New(c config.App, s Screen, i Input) (*app, error) {
 	a := new(app)
+	a.config = c
 	a.screen = s
 	a.input = i
 
@@ -276,7 +279,7 @@ func (a *app) update() {
 		securities := importMap[source.Name]
 		if len(securities) > 0 {
 			wg.Add(1)
-			go source.Update(securities, quotes, &wg)
+			go source.Update(securities, quotes, &wg, a.config)
 		}
 	}
 

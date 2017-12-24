@@ -12,14 +12,14 @@ import (
 
 var db *sqlx.DB
 
-func MustInitialize() {
+func MustInitialize(c config.Db) {
 	dbinfo := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		config.Db().Host,
-		config.Db().Port,
-		config.Db().User,
-		config.Db().Password,
-		config.Db().Dbname,
+		c.Host,
+		c.Port,
+		c.User,
+		c.Password,
+		c.Dbname,
 	)
 
 	var err error
@@ -34,7 +34,7 @@ func Connection() *sqlx.DB {
 	return db
 }
 
-func Dump(dumptype string, file string) {
+func Dump(d config.Db, s config.Sys, dumptype string, file string) {
 	if len(file) == 0 {
 		fmt.Println("Output file is not set")
 		return
@@ -43,13 +43,13 @@ func Dump(dumptype string, file string) {
 	var cmd *exec.Cmd
 	if dumptype == "schema" {
 		cmd = exec.Command(
-			config.Sys().Pgdump,
+			s.Pgdump,
 			"--host",
-			config.Db().Host,
+			d.Host,
 			"--port",
-			config.Db().Port,
+			d.Port,
 			"--username",
-			config.Db().User,
+			d.User,
 			"--no-password",
 			"--format",
 			"plain",
@@ -60,17 +60,17 @@ func Dump(dumptype string, file string) {
 			"--no-unlogged-table-data",
 			"--file",
 			file,
-			config.Db().Dbname,
+			d.Dbname,
 		)
 	} else if dumptype == "data" {
 		cmd = exec.Command(
-			config.Sys().Pgdump,
+			s.Pgdump,
 			"--host",
-			config.Db().Host,
+			d.Host,
 			"--port",
-			config.Db().Port,
+			d.Port,
 			"--username",
-			config.Db().User,
+			d.User,
 			"--no-password",
 			"--format",
 			"plain",
@@ -83,7 +83,7 @@ func Dump(dumptype string, file string) {
 			"--no-unlogged-table-data",
 			"--file",
 			file,
-			config.Db().Dbname,
+			d.Dbname,
 		)
 	} else {
 		fmt.Println("Invalid dump type, please specify 'schema' or 'data'")

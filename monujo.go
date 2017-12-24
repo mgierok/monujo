@@ -18,16 +18,19 @@ func main() {
 	flag.StringVar(&file, "file", "", "where to store the dump")
 	flag.Parse()
 
-	config.MustInitialize(env)
-	db.MustInitialize()
+	conf, err := config.New(env)
+	if err != nil {
+		panic(err)
+	}
+	db.MustInitialize(conf.Db())
 
 	defer db.Connection().Close()
 
 	if len(dump) > 0 {
-		db.Dump(dump, file)
+		db.Dump(conf.Db(), conf.Sys(), dump, file)
 	} else {
-		c, _ := console.New()
-		a, _ := app.New(c, c)
+		console, _ := console.New()
+		a, _ := app.New(conf.App(), console, console)
 		a.Run()
 	}
 }

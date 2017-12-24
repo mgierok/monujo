@@ -7,7 +7,13 @@ import (
 	"github.com/json-iterator/go"
 )
 
-type dbConf struct {
+type Config struct {
+	db  Db
+	sys Sys
+	app App
+}
+
+type Db struct {
 	Host     string
 	Port     string
 	User     string
@@ -15,19 +21,16 @@ type dbConf struct {
 	Dbname   string
 }
 
-type sysConf struct {
+type Sys struct {
 	Pgdump string
 }
 
-type appConf struct {
+type App struct {
 	Alphavantagekey string
 }
 
-var db dbConf
-var sys sysConf
-var app appConf
-
-func MustInitialize(env string) {
+func New(env string) (*Config, error) {
+	c := new(Config)
 	var suffix string
 	if len(env) > 0 {
 		suffix = "." + env
@@ -35,58 +38,60 @@ func MustInitialize(env string) {
 
 	dbConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/db.json" + suffix)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
 	dbConfigFile, err := ioutil.ReadFile(dbConfigFilePath)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
-	err = jsoniter.Unmarshal(dbConfigFile, &db)
+	err = jsoniter.Unmarshal(dbConfigFile, &c.db)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
 	sysConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/sys.json" + suffix)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
 	sysConfigFile, err := ioutil.ReadFile(sysConfigFilePath)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
-	err = jsoniter.Unmarshal(sysConfigFile, &sys)
+	err = jsoniter.Unmarshal(sysConfigFile, &c.sys)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
 	appConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/app.json" + suffix)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
 	appConfigFile, err := ioutil.ReadFile(appConfigFilePath)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
-	err = jsoniter.Unmarshal(appConfigFile, &app)
+	err = jsoniter.Unmarshal(appConfigFile, &c.app)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
+
+	return c, nil
 }
 
-func Db() dbConf {
-	return db
+func (c *Config) Db() Db {
+	return c.db
 }
 
-func Sys() sysConf {
-	return sys
+func (c *Config) Sys() Sys {
+	return c.sys
 }
 
-func App() appConf {
-	return app
+func (c *Config) App() App {
+	return c.app
 }
