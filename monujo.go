@@ -26,8 +26,8 @@ func main() {
 	if len(dump) > 0 {
 		db.Dump(dump, file)
 	} else {
-		c, _ := console.NewConsole()
-		a, _ := app.NewApp(c)
+		c, _ := console.New()
+		a, _ := app.New(c)
 		a.Run()
 	}
 }

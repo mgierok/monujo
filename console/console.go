@@ -2,6 +2,6 @@ package console
 
 type Console struct{}
 
-func NewConsole() (*Console, error) {
+func New() (*Console, error) {
 	return &Console{}, nil
 }

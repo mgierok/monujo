@@ -20,10 +20,11 @@ type app struct {
 	console console.Console
 }
 
-func NewApp(c *console.Console) (*app, error) {
-	return &app{
-		console: *c,
-	}, nil
+func New(c *console.Console) (*app, error) {
+	a := new(app)
+	a.console = *c
+
+	return a, nil
 }
 
 func (a *app) Run() {
