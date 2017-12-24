@@ -1,12 +1,11 @@
 package repository
 
 import (
-	"github.com/mgierok/monujo/db"
 	"github.com/mgierok/monujo/repository/entity"
 )
 
-func StoreOperation(operation entity.Operation) (int64, error) {
-	stmt, err := db.Connection().PrepareNamed(`
+func (r *Repository) StoreOperation(operation entity.Operation) (int64, error) {
+	stmt, err := r.db.PrepareNamed(`
 		INSERT INTO operations (portfolio_id, date, type, value, description, commision, tax)
 		VALUES (:portfolio_id, :date, :type, :value, :description, :commision, :tax)
 		RETURNING operation_id
@@ -20,9 +19,9 @@ func StoreOperation(operation entity.Operation) (int64, error) {
 	return operationId, err
 }
 
-func PortfolioOperations(portfolio entity.Portfolio) (entity.Operations, error) {
+func (r *Repository) PortfolioOperations(portfolio entity.Portfolio) (entity.Operations, error) {
 	operations := entity.Operations{}
-	err := db.Connection().Select(&operations,
+	err := r.db.Select(&operations,
 		`SELECT
 		operation_id,
 		portfolio_id,
@@ -42,7 +41,7 @@ func PortfolioOperations(portfolio entity.Portfolio) (entity.Operations, error) 
 	return operations, err
 }
 
-func DeleteOperation(operation entity.Operation) error {
-	_, err := db.Connection().Exec("DELETE FROM operations  WHERE portfolio_id = $1 AND operation_id = $2", operation.PortfolioId, operation.OperationId)
+func (r *Repository) DeleteOperation(operation entity.Operation) error {
+	_, err := r.db.Exec("DELETE FROM operations  WHERE portfolio_id = $1 AND operation_id = $2", operation.PortfolioId, operation.OperationId)
 	return err
 }

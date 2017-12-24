@@ -30,7 +30,7 @@ func main() {
 		db.Dump(conf.Db(), conf.Sys(), dump, file)
 	} else {
 		console, _ := console.New()
-		a, _ := app.New(conf.App(), console, console)
+		a, _ := app.New(conf.App(), console, console, db.Connection())
 		a.Run()
 	}
 }

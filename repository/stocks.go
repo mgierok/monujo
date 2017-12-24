@@ -1,13 +1,12 @@
 package repository
 
 import (
-	"github.com/mgierok/monujo/db"
 	"github.com/mgierok/monujo/repository/entity"
 )
 
-func OwnedStocks() (entity.OwnedStocks, error) {
+func (r *Repository) OwnedStocks() (entity.OwnedStocks, error) {
 	stocks := entity.OwnedStocks{}
-	err := db.Connection().Select(&stocks,
+	err := r.db.Select(&stocks,
 		`SELECT
 			portfolio_id,
 			portfolio_name,

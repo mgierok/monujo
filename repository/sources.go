@@ -12,6 +12,6 @@ var sources = entity.Sources{
 	{Name: "bankier"},
 }
 
-func Sources() entity.Sources {
+func (r *Repository) Sources() entity.Sources {
 	return sources
 }

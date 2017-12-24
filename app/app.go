@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/mgierok/monujo/config"
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
@@ -29,17 +30,20 @@ type Input interface {
 }
 
 type app struct {
-	config  config.App
-	console console.Console
-	screen  Screen
-	input   Input
+	config     config.App
+	console    console.Console
+	screen     Screen
+	input      Input
+	repository repository.Repository
 }
 
-func New(c config.App, s Screen, i Input) (*app, error) {
+func New(c config.App, s Screen, i Input, db *sqlx.DB) (*app, error) {
 	a := new(app)
 	a.config = c
 	a.screen = s
 	a.input = i
+	r, _ := repository.New(db)
+	a.repository = *r
 
 	return a, nil
 }
@@ -91,7 +95,7 @@ func (a *app) mainMenu() {
 }
 
 func (a *app) summary() {
-	ownedStocks, err := repository.OwnedStocks()
+	ownedStocks, err := a.repository.OwnedStocks()
 	log.PanicIfError(err)
 
 	var data [][]interface{}
@@ -128,7 +132,7 @@ func (a *app) summary() {
 	fmt.Println("")
 	fmt.Println("")
 
-	portfoliosExt, err := repository.PortfoliosExt()
+	portfoliosExt, err := a.repository.PortfoliosExt()
 	log.PanicIfError(err)
 
 	for _, pe := range portfoliosExt {
@@ -163,7 +167,7 @@ func (a *app) summary() {
 func (a *app) listTransactions() {
 	portfolio := a.portfolio()
 
-	transactions, err := repository.PortfolioTransactions(portfolio)
+	transactions, err := a.repository.PortfolioTransactions(portfolio)
 	log.PanicIfError(err)
 
 	var data [][]interface{}
@@ -204,7 +208,7 @@ func (a *app) listTransactions() {
 	}
 
 	transaction := a.pickTransaction(transactions)
-	err = repository.DeleteTransaction(transaction)
+	err = a.repository.DeleteTransaction(transaction)
 	log.PanicIfError(err)
 	fmt.Println("Transaction has been removed")
 }
@@ -212,7 +216,7 @@ func (a *app) listTransactions() {
 func (a *app) listOperations() {
 	portfolio := a.portfolio()
 
-	operations, err := repository.PortfolioOperations(portfolio)
+	operations, err := a.repository.PortfolioOperations(portfolio)
 	log.PanicIfError(err)
 
 	var data [][]interface{}
@@ -247,22 +251,22 @@ func (a *app) listOperations() {
 	}
 
 	operation := a.pickOperation(operations)
-	err = repository.DeleteOperation(operation)
+	err = a.repository.DeleteOperation(operation)
 	log.PanicIfError(err)
 	fmt.Println("Operation has been removed")
 }
 
 func (a *app) update() {
-	ownedStocks, err := repository.OwnedStocks()
+	ownedStocks, err := a.repository.OwnedStocks()
 	log.PanicIfError(err)
-	currencies, err := repository.Currencies()
+	currencies, err := a.repository.Currencies()
 	log.PanicIfError(err)
 
 	var importMap = make(map[string]entity.Securities)
 	tickers := ownedStocks.DistinctTickers()
 	tickers = append(tickers, currencies.CurrencyPairs("PLN")...)
 
-	securities, err := repository.Securities(tickers)
+	securities, err := a.repository.Securities(tickers)
 	log.PanicIfError(err)
 
 	for _, t := range tickers {
@@ -289,7 +293,7 @@ func (a *app) update() {
 	}()
 
 	for q := range quotes {
-		_, err = repository.StoreLatestQuote(q)
+		_, err = a.repository.StoreLatestQuote(q)
 		if err == nil {
 			fmt.Printf("Ticker: %s Quote: %f\n", q.Ticker, q.Close)
 		} else {
@@ -330,7 +334,7 @@ func (a *app) putOperation() {
 	fmt.Println("")
 
 	if a.yesOrNo("Do you want to store this operation?") {
-		operationId, err := repository.StoreOperation(o)
+		operationId, err := a.repository.StoreOperation(o)
 		log.PanicIfError(err)
 
 		fmt.Printf("Operation has been recorded with an ID: %d\n", operationId)
@@ -378,7 +382,7 @@ func (a *app) putTransaction() {
 	fmt.Println("")
 
 	if a.yesOrNo("Do you want to store this transaction?") {
-		transactionId, err := repository.StoreTransaction(t)
+		transactionId, err := a.repository.StoreTransaction(t)
 		log.PanicIfError(err)
 
 		fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
@@ -454,7 +458,7 @@ func (a *app) portfolio() entity.Portfolio {
 	fmt.Println("Choose portfolio")
 	fmt.Println("")
 
-	portfolios, err := repository.Portfolios()
+	portfolios, err := a.repository.Portfolios()
 	log.PanicIfError(err)
 
 	header := []string{
@@ -503,7 +507,7 @@ func (a *app) pickSource() entity.Sources {
 		[]interface{}{"A", "All"},
 	}
 	i := 1
-	for _, s := range repository.Sources() {
+	for _, s := range a.repository.Sources() {
 		dict[strconv.Itoa(i)] = s.Name
 		data = append(data, []interface{}{strconv.Itoa(i), s.Name})
 		i++
@@ -522,11 +526,11 @@ func (a *app) pickSource() entity.Sources {
 	_, exists := dict[input]
 	if exists {
 		if input == "A" {
-			return repository.Sources()
+			return a.repository.Sources()
 		} else if input == "Q" {
 			return entity.Sources{}
 		} else {
-			for _, s := range repository.Sources() {
+			for _, s := range a.repository.Sources() {
 				if s.Name == dict[input] {
 					return entity.Sources{s}
 				}
@@ -540,7 +544,7 @@ func (a *app) financialOperationType() entity.FinancialOperationType {
 	fmt.Println("Choose operation type")
 	fmt.Println("")
 
-	ots, err := repository.FinancialOperationTypes()
+	ots, err := a.repository.FinancialOperationTypes()
 	log.PanicIfError(err)
 
 	header := []string{
@@ -575,7 +579,7 @@ func (a *app) financialOperationType() entity.FinancialOperationType {
 }
 
 func (a *app) securityDetails(ticker string) {
-	exists, err := repository.SecurityExists(ticker)
+	exists, err := a.repository.SecurityExists(ticker)
 	log.PanicIfError(err)
 	if exists {
 		return
@@ -596,7 +600,7 @@ func (a *app) securityDetails(ticker string) {
 	tb := a.input.String("Ticker Bankier", "")
 	s.TickerBankier = sql.NullString{String: tb, Valid: true}
 
-	t, err := repository.StoreSecurity(s)
+	t, err := a.repository.StoreSecurity(s)
 	log.PanicIfError(err)
 
 	fmt.Printf("Security details of %s has been stored\n", strings.TrimSpace(t))
@@ -606,7 +610,7 @@ func (a *app) pickCurrency() string {
 	fmt.Println("Choose currency")
 	fmt.Println("")
 
-	currencies, err := repository.Currencies()
+	currencies, err := a.repository.Currencies()
 	log.PanicIfError(err)
 
 	header := []string{

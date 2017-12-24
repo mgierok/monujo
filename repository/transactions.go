@@ -1,12 +1,11 @@
 package repository
 
 import (
-	"github.com/mgierok/monujo/db"
 	"github.com/mgierok/monujo/repository/entity"
 )
 
-func StoreTransaction(transaction entity.Transaction) (int64, error) {
-	stmt, err := db.Connection().PrepareNamed(`
+func (r *Repository) StoreTransaction(transaction entity.Transaction) (int64, error) {
+	stmt, err := r.db.PrepareNamed(`
 		INSERT INTO transactions (portfolio_id, date, ticker, price, currency, shares, commision, exchange_rate, tax)
 		VALUES (:portfolio_id, :date, :ticker, :price, :currency, :shares, :commision, :exchange_rate, :tax)
 		RETURNING transaction_id
@@ -20,9 +19,9 @@ func StoreTransaction(transaction entity.Transaction) (int64, error) {
 	return transactionId, err
 }
 
-func PortfolioTransactions(portfolio entity.Portfolio) (entity.Transactions, error) {
+func (r *Repository) PortfolioTransactions(portfolio entity.Portfolio) (entity.Transactions, error) {
 	transactions := entity.Transactions{}
-	err := db.Connection().Select(&transactions,
+	err := r.db.Select(&transactions,
 		`SELECT
 		transaction_id,
 		portfolio_id,
@@ -44,7 +43,7 @@ func PortfolioTransactions(portfolio entity.Portfolio) (entity.Transactions, err
 	return transactions, err
 }
 
-func DeleteTransaction(transaction entity.Transaction) error {
-	_, err := db.Connection().Exec("DELETE FROM transactions WHERE portfolio_id = $1 AND transaction_id = $2", transaction.PortfolioId, transaction.TransactionId)
+func (r *Repository) DeleteTransaction(transaction entity.Transaction) error {
+	_, err := r.db.Exec("DELETE FROM transactions WHERE portfolio_id = $1 AND transaction_id = $2", transaction.PortfolioId, transaction.TransactionId)
 	return err
 }

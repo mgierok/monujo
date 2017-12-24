@@ -2,13 +2,12 @@ package repository
 
 import (
 	"github.com/jmoiron/sqlx"
-	"github.com/mgierok/monujo/db"
 	"github.com/mgierok/monujo/repository/entity"
 )
 
-func SecurityExists(ticker string) (bool, error) {
+func (r *Repository) SecurityExists(ticker string) (bool, error) {
 	var exists bool
-	err := db.Connection().Get(
+	err := r.db.Get(
 		&exists,
 		`SELECT
 			COUNT(1)
@@ -20,7 +19,7 @@ func SecurityExists(ticker string) (bool, error) {
 	return exists, err
 }
 
-func Securities(tickers []string) (entity.Securities, error) {
+func (r *Repository) Securities(tickers []string) (entity.Securities, error) {
 	s := entity.Securities{}
 	var query string
 	var err error
@@ -41,8 +40,8 @@ func Securities(tickers []string) (entity.Securities, error) {
 			`,
 			tickers,
 		)
-		query = db.Connection().Rebind(query)
-		err = db.Connection().Select(&s, query, args...)
+		query = r.db.Rebind(query)
+		err = r.db.Select(&s, query, args...)
 	} else {
 		query =
 			`SELECT
@@ -54,14 +53,14 @@ func Securities(tickers []string) (entity.Securities, error) {
 				quotes_source,
 				ticker_bankier
 			FROM securities`
-		err = db.Connection().Select(&s, query)
+		err = r.db.Select(&s, query)
 	}
 
 	return s, err
 }
 
-func StoreSecurity(s entity.Security) (string, error) {
-	stmt, err := db.Connection().PrepareNamed(`
+func (r *Repository) StoreSecurity(s entity.Security) (string, error) {
+	stmt, err := r.db.PrepareNamed(`
 		INSERT INTO securities (ticker, short_name, full_name, market, leverage, quotes_source, ticker_bankier)
 		VALUES (:ticker, :short_name, :full_name, :market, :leverage, :quotes_source, :ticker_bankier)
 		RETURNING ticker
