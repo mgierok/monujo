@@ -277,19 +277,19 @@ type Sources []Source
 func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGroup, config AppConf) {
 	defer wg.Done()
 	if s.Name == "stooq" {
-		stooq(securities, quotes)
+		s.stooq(securities, quotes)
 	} else if s.Name == "ingturbo" {
-		ingturbo(securities, quotes)
+		s.ingturbo(securities, quotes)
 	} else if s.Name == "google" {
-		stooq(securities, quotes)
+		s.stooq(securities, quotes)
 	} else if s.Name == "alphavantage" {
-		alphavantage(securities, quotes, config.Alphavantagekey)
+		s.alphavantage(securities, quotes, config.Alphavantagekey)
 	} else if s.Name == "bankier" {
-		bankier(securities, quotes)
+		s.bankier(securities, quotes)
 	}
 }
 
-func stooq(securities Securities, quotes chan Quote) {
+func (s Source) stooq(securities Securities, quotes chan Quote) {
 	const layout = "20060102"
 	now := time.Now()
 	var client http.Client
@@ -334,7 +334,7 @@ func stooq(securities Securities, quotes chan Quote) {
 	}
 }
 
-func ingturbo(securities Securities, quotes chan Quote) {
+func (s Source) ingturbo(securities Securities, quotes chan Quote) {
 	type response struct {
 		BidQuotes [][]float64 `json:"BidQuotes"`
 	}
@@ -376,7 +376,7 @@ func ingturbo(securities Securities, quotes chan Quote) {
 	}
 }
 
-func alphavantage(securities Securities, quotes chan Quote, key string) {
+func (s Source) alphavantage(securities Securities, quotes chan Quote, key string) {
 	var client http.Client
 	for _, s := range securities {
 		resp, err := client.Get(
@@ -417,7 +417,7 @@ func alphavantage(securities Securities, quotes chan Quote, key string) {
 	}
 }
 
-func google(securities Securities, quotes chan Quote) {
+func (s Source) google(securities Securities, quotes chan Quote) {
 	type gQuote struct {
 		Ticker   string `json:"t"`
 		Exchange string `json:"e"`
@@ -471,7 +471,7 @@ func google(securities Securities, quotes chan Quote) {
 	}
 }
 
-func bankier(securities Securities, quotes chan Quote) {
+func (s Source) bankier(securities Securities, quotes chan Quote) {
 	type bQuote struct {
 		Open   float64
 		High   float64
