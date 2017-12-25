@@ -8,9 +8,9 @@ import (
 )
 
 type Config struct {
-	db  Db
-	sys Sys
-	app App
+	Db  Db
+	Sys Sys
+	App App
 }
 
 type Db struct {
@@ -46,7 +46,7 @@ func New(env string) (*Config, error) {
 		return c, err
 	}
 
-	err = jsoniter.Unmarshal(dbConfigFile, &c.db)
+	err = jsoniter.Unmarshal(dbConfigFile, &c.Db)
 	if err != nil {
 		return c, err
 	}
@@ -61,7 +61,7 @@ func New(env string) (*Config, error) {
 		return c, err
 	}
 
-	err = jsoniter.Unmarshal(sysConfigFile, &c.sys)
+	err = jsoniter.Unmarshal(sysConfigFile, &c.Sys)
 	if err != nil {
 		return c, err
 	}
@@ -76,22 +76,10 @@ func New(env string) (*Config, error) {
 		return c, err
 	}
 
-	err = jsoniter.Unmarshal(appConfigFile, &c.app)
+	err = jsoniter.Unmarshal(appConfigFile, &c.App)
 	if err != nil {
 		return c, err
 	}
 
 	return c, nil
-}
-
-func (c *Config) Db() Db {
-	return c.db
-}
-
-func (c *Config) Sys() Sys {
-	return c.sys
-}
-
-func (c *Config) App() App {
-	return c.app
 }

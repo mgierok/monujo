@@ -22,19 +22,20 @@ func main() {
 		panic(err)
 	}
 
-	database, err := db.New(conf.Db())
+	database, err := db.New(conf.Db)
 	if err != nil {
 		panic(err)
 	}
 
 	defer database.Connection().Close()
 
+	console, _ := console.New()
+	repository, _ := NewRepository(database.Connection())
+	a, _ := NewApp(conf, repository, console, console)
+
 	if len(dump) > 0 {
-		db.Dump(conf.Db(), conf.Sys(), dump, file)
+		a.Dump(dump, file)
 	} else {
-		console, _ := console.New()
-		repository, _ := NewRepository(database.Connection())
-		a, _ := NewApp(conf.App(), repository, console, console)
 		a.Run()
 	}
 }

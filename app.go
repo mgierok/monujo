@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,16 +28,16 @@ type Input interface {
 }
 
 type app struct {
-	config     config.App
+	config     config.Config
 	console    console.Console
 	screen     Screen
 	input      Input
 	repository Repository
 }
 
-func NewApp(c config.App, r *Repository, s Screen, i Input) (*app, error) {
+func NewApp(c *config.Config, r *Repository, s Screen, i Input) (*app, error) {
 	a := new(app)
-	a.config = c
+	a.config = *c
 	a.screen = s
 	a.input = i
 	a.repository = *r
@@ -279,7 +280,7 @@ func (a *app) update() {
 		securities := importMap[source.Name]
 		if len(securities) > 0 {
 			wg.Add(1)
-			go source.Update(securities, quotes, &wg, a.config)
+			go source.Update(securities, quotes, &wg, a.config.App)
 		}
 	}
 
@@ -662,4 +663,69 @@ func (a *app) isShort() bool {
 	}
 
 	return a.isShort()
+}
+
+func (a *app) Dump(dumptype string, file string) {
+	if len(file) == 0 {
+		fmt.Println("Output file is not set")
+		return
+	}
+
+	var cmd *exec.Cmd
+	if dumptype == "schema" {
+		cmd = exec.Command(
+			a.config.Sys.Pgdump,
+			"--host",
+			a.config.Db.Host,
+			"--port",
+			a.config.Db.Port,
+			"--username",
+			a.config.Db.User,
+			"--no-password",
+			"--format",
+			"plain",
+			"--schema-only",
+			"--no-owner",
+			"--no-privileges",
+			"--no-tablespaces",
+			"--no-unlogged-table-data",
+			"--file",
+			file,
+			a.config.Db.Dbname,
+		)
+	} else if dumptype == "data" {
+		cmd = exec.Command(
+			a.config.Sys.Pgdump,
+			"--host",
+			a.config.Db.Host,
+			"--port",
+			a.config.Db.Port,
+			"--username",
+			a.config.Db.User,
+			"--no-password",
+			"--format",
+			"plain",
+			"--data-only",
+			"--inserts",
+			"--disable-triggers",
+			"--no-owner",
+			"--no-privileges",
+			"--no-tablespaces",
+			"--no-unlogged-table-data",
+			"--file",
+			file,
+			a.config.Db.Dbname,
+		)
+	} else {
+		fmt.Println("Invalid dump type, please specify 'schema' or 'data'")
+		return
+	}
+
+	stdout, err := cmd.Output()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	fmt.Println(string(stdout))
 }
