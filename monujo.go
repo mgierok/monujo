@@ -7,6 +7,7 @@ import (
 	"github.com/mgierok/monujo/config"
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/db"
+	"github.com/mgierok/monujo/repository"
 )
 
 func main() {
@@ -23,18 +24,19 @@ func main() {
 		panic(err)
 	}
 
-	connection, err := db.New(conf.Db())
+	database, err := db.New(conf.Db())
 	if err != nil {
 		panic(err)
 	}
 
-	defer connection.Connection().Close()
+	defer database.Connection().Close()
 
 	if len(dump) > 0 {
 		db.Dump(conf.Db(), conf.Sys(), dump, file)
 	} else {
 		console, _ := console.New()
-		a, _ := app.New(conf.App(), console, console, connection.Connection())
+		repository, _ := repository.New(database.Connection())
+		a, _ := app.New(conf.App(), repository, console, console)
 		a.Run()
 	}
 }

@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/mgierok/monujo/config"
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
@@ -37,12 +36,11 @@ type app struct {
 	repository repository.Repository
 }
 
-func New(c config.App, s Screen, i Input, db *sqlx.DB) (*app, error) {
+func New(c config.App, r *repository.Repository, s Screen, i Input) (*app, error) {
 	a := new(app)
 	a.config = c
 	a.screen = s
 	a.input = i
-	r, _ := repository.New(db)
 	a.repository = *r
 
 	return a, nil
