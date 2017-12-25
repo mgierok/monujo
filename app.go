@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mgierok/monujo/config"
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
 )
@@ -28,14 +27,14 @@ type Input interface {
 }
 
 type app struct {
-	config     config.Config
+	config     Config
 	console    console.Console
 	screen     Screen
 	input      Input
 	repository Repository
 }
 
-func NewApp(c *config.Config, r *Repository, s Screen, i Input) (*app, error) {
+func NewApp(c *Config, r *Repository, s Screen, i Input) (*app, error) {
 	a := new(app)
 	a.config = *c
 	a.screen = s

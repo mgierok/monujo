@@ -14,7 +14,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/mgierok/monujo/config"
 )
 
 type Repository struct {
@@ -275,7 +274,7 @@ type Source struct {
 
 type Sources []Source
 
-func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGroup, config config.App) {
+func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGroup, config AppConf) {
 	defer wg.Done()
 	if s.Name == "stooq" {
 		stooq(securities, quotes)
@@ -284,7 +283,7 @@ func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGr
 	} else if s.Name == "google" {
 		stooq(securities, quotes)
 	} else if s.Name == "alphavantage" {
-		alphavantage(securities, quotes, config)
+		alphavantage(securities, quotes, config.Alphavantagekey)
 	} else if s.Name == "bankier" {
 		bankier(securities, quotes)
 	}
@@ -377,13 +376,13 @@ func ingturbo(securities Securities, quotes chan Quote) {
 	}
 }
 
-func alphavantage(securities Securities, quotes chan Quote, config config.App) {
+func alphavantage(securities Securities, quotes chan Quote, key string) {
 	var client http.Client
 	for _, s := range securities {
 		resp, err := client.Get(
 			fmt.Sprintf(
 				"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&apikey=%s&datatype=csv&symbol=%s",
-				config.Alphavantagekey,
+				key,
 				strings.TrimSuffix(strings.TrimSpace(s.Ticker), ".US"),
 			),
 		)

@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"io/ioutil"
@@ -8,12 +8,12 @@ import (
 )
 
 type Config struct {
-	Db  Db
-	Sys Sys
-	App App
+	Db  DbConf
+	Sys SysConf
+	App AppConf
 }
 
-type Db struct {
+type DbConf struct {
 	Host     string
 	Port     string
 	User     string
@@ -21,15 +21,15 @@ type Db struct {
 	Dbname   string
 }
 
-type Sys struct {
+type SysConf struct {
 	Pgdump string
 }
 
-type App struct {
+type AppConf struct {
 	Alphavantagekey string
 }
 
-func New(env string) (*Config, error) {
+func NewConfig(env string) (*Config, error) {
 	c := new(Config)
 	var suffix string
 	if len(env) > 0 {
