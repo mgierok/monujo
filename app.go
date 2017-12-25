@@ -1,4 +1,4 @@
-package app
+package main
 
 import (
 	"bufio"
@@ -13,8 +13,6 @@ import (
 	"github.com/mgierok/monujo/config"
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
-	"github.com/mgierok/monujo/repository"
-	"github.com/mgierok/monujo/repository/entity"
 )
 
 type Screen interface {
@@ -33,10 +31,10 @@ type app struct {
 	console    console.Console
 	screen     Screen
 	input      Input
-	repository repository.Repository
+	repository Repository
 }
 
-func New(c config.App, r *repository.Repository, s Screen, i Input) (*app, error) {
+func NewApp(c config.App, r *Repository, s Screen, i Input) (*app, error) {
 	a := new(app)
 	a.config = c
 	a.screen = s
@@ -260,7 +258,7 @@ func (a *app) update() {
 	currencies, err := a.repository.Currencies()
 	log.PanicIfError(err)
 
-	var importMap = make(map[string]entity.Securities)
+	var importMap = make(map[string]Securities)
 	tickers := ownedStocks.DistinctTickers()
 	tickers = append(tickers, currencies.CurrencyPairs("PLN")...)
 
@@ -276,7 +274,7 @@ func (a *app) update() {
 	}
 
 	var wg sync.WaitGroup
-	quotes := make(chan entity.Quote)
+	quotes := make(chan Quote)
 	for _, source := range a.pickSource() {
 		securities := importMap[source.Name]
 		if len(securities) > 0 {
@@ -301,7 +299,7 @@ func (a *app) update() {
 }
 
 func (a *app) putOperation() {
-	var o entity.Operation
+	var o Operation
 	o.PortfolioId = a.portfolio().PortfolioId
 	a.screen.Clear()
 	o.Date = a.input.Date("Date", time.Now())
@@ -343,7 +341,7 @@ func (a *app) putOperation() {
 }
 
 func (a *app) putTransaction() {
-	var t entity.Transaction
+	var t Transaction
 	t.PortfolioId = a.portfolio().PortfolioId
 	a.screen.Clear()
 	t.Date = a.input.Date("Date", time.Now())
@@ -391,7 +389,7 @@ func (a *app) putTransaction() {
 	}
 }
 
-func (a *app) pickTransaction(transactions entity.Transactions) entity.Transaction {
+func (a *app) pickTransaction(transactions Transactions) Transaction {
 	var input string
 	fmt.Print("Transaction ID: ")
 	fmt.Scanln(&input)
@@ -413,7 +411,7 @@ func (a *app) pickTransaction(transactions entity.Transactions) entity.Transacti
 	}
 }
 
-func (a *app) pickOperation(operations entity.Operations) entity.Operation {
+func (a *app) pickOperation(operations Operations) Operation {
 	var input string
 	fmt.Print("Operation ID: ")
 	fmt.Scanln(&input)
@@ -452,7 +450,7 @@ func (a *app) yesOrNo(question string) bool {
 	return a.yesOrNo(question)
 }
 
-func (a *app) portfolio() entity.Portfolio {
+func (a *app) portfolio() Portfolio {
 	fmt.Println("Choose portfolio")
 	fmt.Println("")
 
@@ -493,7 +491,7 @@ func (a *app) portfolio() entity.Portfolio {
 	}
 }
 
-func (a *app) pickSource() entity.Sources {
+func (a *app) pickSource() Sources {
 	fmt.Println("Choose from which source you want to update quotes")
 	fmt.Println("")
 
@@ -526,11 +524,11 @@ func (a *app) pickSource() entity.Sources {
 		if input == "A" {
 			return a.repository.Sources()
 		} else if input == "Q" {
-			return entity.Sources{}
+			return Sources{}
 		} else {
 			for _, s := range a.repository.Sources() {
 				if s.Name == dict[input] {
-					return entity.Sources{s}
+					return Sources{s}
 				}
 			}
 		}
@@ -538,7 +536,7 @@ func (a *app) pickSource() entity.Sources {
 	return a.pickSource()
 }
 
-func (a *app) financialOperationType() entity.FinancialOperationType {
+func (a *app) financialOperationType() FinancialOperationType {
 	fmt.Println("Choose operation type")
 	fmt.Println("")
 
@@ -549,7 +547,7 @@ func (a *app) financialOperationType() entity.FinancialOperationType {
 		"Operation type",
 	}
 
-	var dict = make(map[string]entity.FinancialOperationType)
+	var dict = make(map[string]FinancialOperationType)
 	var data [][]interface{}
 	for _, ot := range ots {
 		dict[ot.Type] = ot
@@ -587,7 +585,7 @@ func (a *app) securityDetails(ticker string) {
 		return
 	}
 
-	s := entity.Security{
+	s := Security{
 		Ticker: ticker,
 	}
 	s.ShortName = a.input.String("Short name")
