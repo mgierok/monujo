@@ -2,10 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
 
-	"github.com/mgierok/monujo/action"
-	"github.com/mgierok/monujo/config"
-	"github.com/mgierok/monujo/db"
+	"github.com/jmoiron/sqlx"
+	"github.com/mgierok/monujo/console"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -17,14 +19,35 @@ func main() {
 	flag.StringVar(&file, "file", "", "where to store the dump")
 	flag.Parse()
 
-	config.MustInitialize(env)
-	db.MustInitialize()
+	conf, err := NewConfig(env)
+	if err != nil {
+		panic(err)
+	}
 
-	defer db.Connection().Close()
+	dbinfo := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		conf.Db.Host,
+		conf.Db.Port,
+		conf.Db.User,
+		conf.Db.Password,
+		conf.Db.Dbname,
+	)
+
+	db, err := sqlx.Connect("postgres", dbinfo)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer db.Close()
+
+	console, _ := console.New()
+	repository, _ := NewRepository(db)
+	a, _ := NewApp(conf, repository, console, console)
 
 	if len(dump) > 0 {
-		db.Dump(dump, file)
+		a.Dump(dump, file)
 	} else {
-		action.Run()
+		a.Run()
 	}
 }

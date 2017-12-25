@@ -1,10 +1,11 @@
-package action
+package main
 
 import (
 	"bufio"
 	"database/sql"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -12,15 +13,42 @@ import (
 
 	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
-	"github.com/mgierok/monujo/repository"
-	"github.com/mgierok/monujo/repository/entity"
 )
 
-func Run() {
-	mainMenu()
+type Screen interface {
+	DrawTable(header []string, data [][]interface{})
+	Clear()
 }
 
-func mainMenu() {
+type Input interface {
+	String(name string, args ...string) string
+	Float(name string, args ...float64) float64
+	Date(name string, args ...time.Time) time.Time
+}
+
+type app struct {
+	config     Config
+	console    console.Console
+	screen     Screen
+	input      Input
+	repository Repository
+}
+
+func NewApp(c *Config, r *Repository, s Screen, i Input) (*app, error) {
+	a := new(app)
+	a.config = *c
+	a.screen = s
+	a.input = i
+	a.repository = *r
+
+	return a, nil
+}
+
+func (a *app) Run() {
+	a.mainMenu()
+}
+
+func (a *app) mainMenu() {
 	fmt.Println("Choose action")
 	data := [][]interface{}{
 		[]interface{}{"S", "Summary"},
@@ -32,45 +60,38 @@ func mainMenu() {
 		[]interface{}{"Q", "Quit"},
 	}
 
-	console.DrawTable([]string{}, data)
+	a.screen.DrawTable([]string{}, data)
 
-	var a string
-	fmt.Scanln(&a)
-	a = strings.ToUpper(a)
-	console.Clear()
+	var action string
+	fmt.Scanln(&action)
+	action = strings.ToUpper(action)
+	a.screen.Clear()
 
-	if a == "S" {
-		runAction(summary)
-	} else if a == "PT" {
-		runAction(putTransaction)
-	} else if a == "LT" {
-		runAction(listTransactions)
-	} else if a == "PO" {
-		runAction(putOperation)
-	} else if a == "LO" {
-		runAction(listOperations)
-	} else if a == "U" {
-		runAction(update)
-	} else if a == "Q" {
+	if action == "S" {
+		a.summary()
+	} else if action == "PT" {
+		a.putTransaction()
+	} else if action == "LT" {
+		a.listTransactions()
+	} else if action == "PO" {
+		a.putOperation()
+	} else if action == "LO" {
+		a.listOperations()
+	} else if action == "U" {
+		a.update()
+	} else if action == "Q" {
 		return
-	} else {
-		mainMenu()
 	}
-}
 
-func runAction(f func()) {
-	console.Clear()
-	f()
-
-	// type something to continue TODO how to detect enter key?
 	var input string
 	fmt.Scanln(&input)
 
-	mainMenu()
+	a.screen.Clear()
+	a.mainMenu()
 }
 
-func summary() {
-	ownedStocks, err := repository.OwnedStocks()
+func (a *app) summary() {
+	ownedStocks, err := a.repository.OwnedStocks()
 	log.PanicIfError(err)
 
 	var data [][]interface{}
@@ -101,13 +122,13 @@ func summary() {
 		"Gain BC%",
 	}
 
-	console.DrawTable(header, data)
+	a.screen.DrawTable(header, data)
 
 	data = data[0:0]
 	fmt.Println("")
 	fmt.Println("")
 
-	portfoliosExt, err := repository.PortfoliosExt()
+	portfoliosExt, err := a.repository.PortfoliosExt()
 	log.PanicIfError(err)
 
 	for _, pe := range portfoliosExt {
@@ -136,13 +157,13 @@ func summary() {
 		"Month Balance",
 	}
 
-	console.DrawTable(header, data)
+	a.screen.DrawTable(header, data)
 }
 
-func listTransactions() {
-	portfolio := portfolio()
+func (a *app) listTransactions() {
+	portfolio := a.portfolio()
 
-	transactions, err := repository.PortfolioTransactions(portfolio)
+	transactions, err := a.repository.PortfolioTransactions(portfolio)
 	log.PanicIfError(err)
 
 	var data [][]interface{}
@@ -175,23 +196,23 @@ func listTransactions() {
 		"Tax",
 	}
 
-	console.DrawTable(header, data)
+	a.screen.DrawTable(header, data)
 	fmt.Println("")
 
-	if !yesOrNo("Do you want to delete single transaction?") {
+	if !a.yesOrNo("Do you want to delete single transaction?") {
 		return
 	}
 
-	transaction := pickTransaction(transactions)
-	err = repository.DeleteTransaction(transaction)
+	transaction := a.pickTransaction(transactions)
+	err = a.repository.DeleteTransaction(transaction)
 	log.PanicIfError(err)
 	fmt.Println("Transaction has been removed")
 }
 
-func listOperations() {
-	portfolio := portfolio()
+func (a *app) listOperations() {
+	portfolio := a.portfolio()
 
-	operations, err := repository.PortfolioOperations(portfolio)
+	operations, err := a.repository.PortfolioOperations(portfolio)
 	log.PanicIfError(err)
 
 	var data [][]interface{}
@@ -218,30 +239,30 @@ func listOperations() {
 		"Commision",
 	}
 
-	console.DrawTable(header, data)
+	a.screen.DrawTable(header, data)
 	fmt.Println("")
 
-	if !yesOrNo("Do you want to delete single financial operation?") {
+	if !a.yesOrNo("Do you want to delete single financial operation?") {
 		return
 	}
 
-	operation := pickOperation(operations)
-	err = repository.DeleteOperation(operation)
+	operation := a.pickOperation(operations)
+	err = a.repository.DeleteOperation(operation)
 	log.PanicIfError(err)
 	fmt.Println("Operation has been removed")
 }
 
-func update() {
-	ownedStocks, err := repository.OwnedStocks()
+func (a *app) update() {
+	ownedStocks, err := a.repository.OwnedStocks()
 	log.PanicIfError(err)
-	currencies, err := repository.Currencies()
+	currencies, err := a.repository.Currencies()
 	log.PanicIfError(err)
 
-	var importMap = make(map[string]entity.Securities)
+	var importMap = make(map[string]Securities)
 	tickers := ownedStocks.DistinctTickers()
 	tickers = append(tickers, currencies.CurrencyPairs("PLN")...)
 
-	securities, err := repository.Securities(tickers)
+	securities, err := a.repository.Securities(tickers)
 	log.PanicIfError(err)
 
 	for _, t := range tickers {
@@ -253,12 +274,12 @@ func update() {
 	}
 
 	var wg sync.WaitGroup
-	quotes := make(chan entity.Quote)
-	for _, source := range pickSource() {
+	quotes := make(chan Quote)
+	for _, source := range a.pickSource() {
 		securities := importMap[source.Name]
 		if len(securities) > 0 {
 			wg.Add(1)
-			go source.Update(securities, quotes, &wg)
+			go source.Update(securities, quotes, &wg, a.config.App)
 		}
 	}
 
@@ -268,7 +289,7 @@ func update() {
 	}()
 
 	for q := range quotes {
-		_, err = repository.StoreLatestQuote(q)
+		_, err = a.repository.StoreLatestQuote(q)
 		if err == nil {
 			fmt.Printf("Ticker: %s Quote: %f\n", q.Ticker, q.Close)
 		} else {
@@ -277,22 +298,22 @@ func update() {
 	}
 }
 
-func putOperation() {
-	var o entity.Operation
-	o.PortfolioId = portfolio().PortfolioId
-	console.Clear()
-	o.Date = console.InputDate("Date", time.Now())
-	console.Clear()
-	o.Type = financialOperationType().Type
-	console.Clear()
-	o.Value = console.InputFloat("Value")
-	console.Clear()
-	o.Description = console.InputString("Description", "")
-	console.Clear()
-	o.Commision = console.InputFloat("Commision", 0)
-	console.Clear()
-	o.Tax = console.InputFloat("Tax", 0)
-	console.Clear()
+func (a *app) putOperation() {
+	var o Operation
+	o.PortfolioId = a.portfolio().PortfolioId
+	a.screen.Clear()
+	o.Date = a.input.Date("Date", time.Now())
+	a.screen.Clear()
+	o.Type = a.financialOperationType().Type
+	a.screen.Clear()
+	o.Value = a.input.Float("Value")
+	a.screen.Clear()
+	o.Description = a.input.String("Description", "")
+	a.screen.Clear()
+	o.Commision = a.input.Float("Commision", 0)
+	a.screen.Clear()
+	o.Tax = a.input.Float("Tax", 0)
+	a.screen.Clear()
 
 	summary := [][]interface{}{
 		[]interface{}{"Portfolio ID", o.PortfolioId},
@@ -304,12 +325,12 @@ func putOperation() {
 		[]interface{}{"Tax", o.Tax},
 	}
 
-	console.Clear()
-	console.DrawTable([]string{}, summary)
+	a.screen.Clear()
+	a.screen.DrawTable([]string{}, summary)
 	fmt.Println("")
 
-	if yesOrNo("Do you want to store this operation?") {
-		operationId, err := repository.StoreOperation(o)
+	if a.yesOrNo("Do you want to store this operation?") {
+		operationId, err := a.repository.StoreOperation(o)
 		log.PanicIfError(err)
 
 		fmt.Printf("Operation has been recorded with an ID: %d\n", operationId)
@@ -319,26 +340,26 @@ func putOperation() {
 
 }
 
-func putTransaction() {
-	var t entity.Transaction
-	t.PortfolioId = portfolio().PortfolioId
-	console.Clear()
-	t.Date = console.InputDate("Date", time.Now())
-	console.Clear()
-	t.Ticker = console.InputString("Ticker")
-	console.Clear()
-	t.Price = console.InputFloat("Price")
-	console.Clear()
-	t.Currency = pickCurrency()
-	console.Clear()
-	t.Shares = shares()
-	console.Clear()
-	t.Commision = console.InputFloat("Commision", 0)
-	console.Clear()
-	t.ExchangeRate = console.InputFloat("Exchange rate", 1)
-	console.Clear()
-	t.Tax = console.InputFloat("Tax", 0)
-	console.Clear()
+func (a *app) putTransaction() {
+	var t Transaction
+	t.PortfolioId = a.portfolio().PortfolioId
+	a.screen.Clear()
+	t.Date = a.input.Date("Date", time.Now())
+	a.screen.Clear()
+	t.Ticker = a.input.String("Ticker")
+	a.screen.Clear()
+	t.Price = a.input.Float("Price")
+	a.screen.Clear()
+	t.Currency = a.pickCurrency()
+	a.screen.Clear()
+	t.Shares = a.shares()
+	a.screen.Clear()
+	t.Commision = a.input.Float("Commision", 0)
+	a.screen.Clear()
+	t.ExchangeRate = a.input.Float("Exchange rate", 1)
+	a.screen.Clear()
+	t.Tax = a.input.Float("Tax", 0)
+	a.screen.Clear()
 
 	summary := [][]interface{}{
 		[]interface{}{"Portfolio ID", t.PortfolioId},
@@ -352,23 +373,23 @@ func putTransaction() {
 		[]interface{}{"Tax", t.Tax},
 	}
 
-	console.Clear()
-	console.DrawTable([]string{}, summary)
+	a.screen.Clear()
+	a.screen.DrawTable([]string{}, summary)
 	fmt.Println("")
 
-	if yesOrNo("Do you want to store this transaction?") {
-		transactionId, err := repository.StoreTransaction(t)
+	if a.yesOrNo("Do you want to store this transaction?") {
+		transactionId, err := a.repository.StoreTransaction(t)
 		log.PanicIfError(err)
 
 		fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
 
-		securityDetails(t.Ticker)
+		a.securityDetails(t.Ticker)
 	} else {
 		fmt.Println("Transaction has not been recorded")
 	}
 }
 
-func pickTransaction(transactions entity.Transactions) entity.Transaction {
+func (a *app) pickTransaction(transactions Transactions) Transaction {
 	var input string
 	fmt.Print("Transaction ID: ")
 	fmt.Scanln(&input)
@@ -377,7 +398,7 @@ func pickTransaction(transactions entity.Transactions) entity.Transaction {
 
 	if nil != err {
 		fmt.Printf("\n%s is not a valid transaction ID\n\n", input)
-		return pickTransaction(transactions)
+		return a.pickTransaction(transactions)
 	} else {
 		for _, t := range transactions {
 			if t.TransactionId == transactionId {
@@ -386,11 +407,11 @@ func pickTransaction(transactions entity.Transactions) entity.Transaction {
 		}
 
 		fmt.Printf("\n%s is not a valid transaction ID\n\n", input)
-		return pickTransaction(transactions)
+		return a.pickTransaction(transactions)
 	}
 }
 
-func pickOperation(operations entity.Operations) entity.Operation {
+func (a *app) pickOperation(operations Operations) Operation {
 	var input string
 	fmt.Print("Operation ID: ")
 	fmt.Scanln(&input)
@@ -399,7 +420,7 @@ func pickOperation(operations entity.Operations) entity.Operation {
 
 	if nil != err {
 		fmt.Printf("\n%s is not a valid operation ID\n\n", input)
-		return pickOperation(operations)
+		return a.pickOperation(operations)
 	} else {
 		for _, o := range operations {
 			if o.OperationId == operationId {
@@ -408,11 +429,11 @@ func pickOperation(operations entity.Operations) entity.Operation {
 		}
 
 		fmt.Printf("\n%s is not a valid operation ID\n\n", input)
-		return pickOperation(operations)
+		return a.pickOperation(operations)
 	}
 }
 
-func yesOrNo(question string) bool {
+func (a *app) yesOrNo(question string) bool {
 	fmt.Println(question)
 	fmt.Println("(Y)es or (N)o?")
 
@@ -426,14 +447,14 @@ func yesOrNo(question string) bool {
 		return false
 	}
 
-	return yesOrNo(question)
+	return a.yesOrNo(question)
 }
 
-func portfolio() entity.Portfolio {
+func (a *app) portfolio() Portfolio {
 	fmt.Println("Choose portfolio")
 	fmt.Println("")
 
-	portfolios, err := repository.Portfolios()
+	portfolios, err := a.repository.Portfolios()
 	log.PanicIfError(err)
 
 	header := []string{
@@ -446,7 +467,7 @@ func portfolio() entity.Portfolio {
 		data = append(data, []interface{}{p.PortfolioId, p.Name})
 	}
 
-	console.DrawTable(header, data)
+	a.screen.DrawTable(header, data)
 	fmt.Println("")
 
 	var input string
@@ -457,7 +478,7 @@ func portfolio() entity.Portfolio {
 
 	if nil != err {
 		fmt.Printf("\n%s is not a valid portfolio ID\n\n", input)
-		return portfolio()
+		return a.portfolio()
 	} else {
 		for _, p := range portfolios {
 			if p.PortfolioId == portfolioId {
@@ -466,11 +487,11 @@ func portfolio() entity.Portfolio {
 		}
 
 		fmt.Printf("\n%s is not a valid portfolio ID\n\n", input)
-		return portfolio()
+		return a.portfolio()
 	}
 }
 
-func pickSource() entity.Sources {
+func (a *app) pickSource() Sources {
 	fmt.Println("Choose from which source you want to update quotes")
 	fmt.Println("")
 
@@ -482,58 +503,58 @@ func pickSource() entity.Sources {
 		[]interface{}{"A", "All"},
 	}
 	i := 1
-	for _, s := range repository.Sources() {
+	for _, s := range a.repository.Sources() {
 		dict[strconv.Itoa(i)] = s.Name
 		data = append(data, []interface{}{strconv.Itoa(i), s.Name})
 		i++
 	}
 	data = append(data, []interface{}{"Q", "Quit"})
 
-	console.DrawTable([]string{}, data)
+	a.screen.DrawTable([]string{}, data)
 	fmt.Println("")
 
 	var input string
 	fmt.Scanln(&input)
-	console.Clear()
+	a.screen.Clear()
 
 	input = strings.ToUpper(input)
 
 	_, exists := dict[input]
 	if exists {
 		if input == "A" {
-			return repository.Sources()
+			return a.repository.Sources()
 		} else if input == "Q" {
-			return entity.Sources{}
+			return Sources{}
 		} else {
-			for _, s := range repository.Sources() {
+			for _, s := range a.repository.Sources() {
 				if s.Name == dict[input] {
-					return entity.Sources{s}
+					return Sources{s}
 				}
 			}
 		}
 	}
-	return pickSource()
+	return a.pickSource()
 }
 
-func financialOperationType() entity.FinancialOperationType {
+func (a *app) financialOperationType() FinancialOperationType {
 	fmt.Println("Choose operation type")
 	fmt.Println("")
 
-	ots, err := repository.FinancialOperationTypes()
+	ots, err := a.repository.FinancialOperationTypes()
 	log.PanicIfError(err)
 
 	header := []string{
 		"Operation type",
 	}
 
-	var dict = make(map[string]entity.FinancialOperationType)
+	var dict = make(map[string]FinancialOperationType)
 	var data [][]interface{}
 	for _, ot := range ots {
 		dict[ot.Type] = ot
 		data = append(data, []interface{}{ot.Type})
 	}
 
-	console.DrawTable(header, data)
+	a.screen.DrawTable(header, data)
 	fmt.Println("")
 
 	fmt.Print("Type: ")
@@ -549,43 +570,43 @@ func financialOperationType() entity.FinancialOperationType {
 		return dict[ot]
 	} else {
 		fmt.Printf("\n%s is not a valid operation type\n\n", ot)
-		return financialOperationType()
+		return a.financialOperationType()
 	}
 }
 
-func securityDetails(ticker string) {
-	exists, err := repository.SecurityExists(ticker)
+func (a *app) securityDetails(ticker string) {
+	exists, err := a.repository.SecurityExists(ticker)
 	log.PanicIfError(err)
 	if exists {
 		return
 	}
 
-	if !yesOrNo(fmt.Sprintf("Would you like to add %s security detials to the database?", strings.TrimSpace(ticker))) {
+	if !a.yesOrNo(fmt.Sprintf("Would you like to add %s security detials to the database?", strings.TrimSpace(ticker))) {
 		return
 	}
 
-	s := entity.Security{
+	s := Security{
 		Ticker: ticker,
 	}
-	s.ShortName = console.InputString("Short name")
-	s.FullName = console.InputString("Full name")
-	s.Market = console.InputString("Market")
-	s.Leverage = console.InputFloat("Leverage", 1)
-	s.QuotesSource = console.InputString("Quotes source")
-	tb := console.InputString("Ticker Bankier", "")
+	s.ShortName = a.input.String("Short name")
+	s.FullName = a.input.String("Full name")
+	s.Market = a.input.String("Market")
+	s.Leverage = a.input.Float("Leverage", 1)
+	s.QuotesSource = a.input.String("Quotes source")
+	tb := a.input.String("Ticker Bankier", "")
 	s.TickerBankier = sql.NullString{String: tb, Valid: true}
 
-	t, err := repository.StoreSecurity(s)
+	t, err := a.repository.StoreSecurity(s)
 	log.PanicIfError(err)
 
 	fmt.Printf("Security details of %s has been stored\n", strings.TrimSpace(t))
 }
 
-func pickCurrency() string {
+func (a *app) pickCurrency() string {
 	fmt.Println("Choose currency")
 	fmt.Println("")
 
-	currencies, err := repository.Currencies()
+	currencies, err := a.repository.Currencies()
 	log.PanicIfError(err)
 
 	header := []string{
@@ -599,7 +620,7 @@ func pickCurrency() string {
 		data = append(data, []interface{}{c.Symbol})
 	}
 
-	console.DrawTable(header, data)
+	a.screen.DrawTable(header, data)
 	fmt.Println("")
 
 	var c string
@@ -613,14 +634,14 @@ func pickCurrency() string {
 		return c
 	} else {
 		fmt.Printf("\n%s is not a valid currency\n\n", c)
-		return pickCurrency()
+		return a.pickCurrency()
 	}
 }
 
-func shares() float64 {
-	s := console.InputFloat("Shares")
+func (a *app) shares() float64 {
+	s := a.input.Float("Shares")
 
-	isShort := isShort()
+	isShort := a.isShort()
 	if (isShort && s > 0) || (!isShort && s < 0) {
 		return 0 - s
 	}
@@ -628,7 +649,7 @@ func shares() float64 {
 	return s
 }
 
-func isShort() bool {
+func (a *app) isShort() bool {
 	var input string
 	fmt.Println("(B)UY or (S)ELL?")
 	fmt.Scanln(&input)
@@ -640,5 +661,70 @@ func isShort() bool {
 		return false
 	}
 
-	return isShort()
+	return a.isShort()
+}
+
+func (a *app) Dump(dumptype string, file string) {
+	if len(file) == 0 {
+		fmt.Println("Output file is not set")
+		return
+	}
+
+	var cmd *exec.Cmd
+	if dumptype == "schema" {
+		cmd = exec.Command(
+			a.config.Sys.Pgdump,
+			"--host",
+			a.config.Db.Host,
+			"--port",
+			a.config.Db.Port,
+			"--username",
+			a.config.Db.User,
+			"--no-password",
+			"--format",
+			"plain",
+			"--schema-only",
+			"--no-owner",
+			"--no-privileges",
+			"--no-tablespaces",
+			"--no-unlogged-table-data",
+			"--file",
+			file,
+			a.config.Db.Dbname,
+		)
+	} else if dumptype == "data" {
+		cmd = exec.Command(
+			a.config.Sys.Pgdump,
+			"--host",
+			a.config.Db.Host,
+			"--port",
+			a.config.Db.Port,
+			"--username",
+			a.config.Db.User,
+			"--no-password",
+			"--format",
+			"plain",
+			"--data-only",
+			"--inserts",
+			"--disable-triggers",
+			"--no-owner",
+			"--no-privileges",
+			"--no-tablespaces",
+			"--no-unlogged-table-data",
+			"--file",
+			file,
+			a.config.Db.Dbname,
+		)
+	} else {
+		fmt.Println("Invalid dump type, please specify 'schema' or 'data'")
+		return
+	}
+
+	stdout, err := cmd.Output()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	fmt.Println(string(stdout))
 }

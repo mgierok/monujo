@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"io/ioutil"
@@ -7,7 +7,13 @@ import (
 	"github.com/json-iterator/go"
 )
 
-type dbConf struct {
+type Config struct {
+	Db  DbConf
+	Sys SysConf
+	App AppConf
+}
+
+type DbConf struct {
 	Host     string
 	Port     string
 	User     string
@@ -15,19 +21,16 @@ type dbConf struct {
 	Dbname   string
 }
 
-type sysConf struct {
+type SysConf struct {
 	Pgdump string
 }
 
-type appConf struct {
+type AppConf struct {
 	Alphavantagekey string
 }
 
-var db dbConf
-var sys sysConf
-var app appConf
-
-func MustInitialize(env string) {
+func NewConfig(env string) (*Config, error) {
+	c := new(Config)
 	var suffix string
 	if len(env) > 0 {
 		suffix = "." + env
@@ -35,58 +38,48 @@ func MustInitialize(env string) {
 
 	dbConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/db.json" + suffix)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
 	dbConfigFile, err := ioutil.ReadFile(dbConfigFilePath)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
-	err = jsoniter.Unmarshal(dbConfigFile, &db)
+	err = jsoniter.Unmarshal(dbConfigFile, &c.Db)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
 	sysConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/sys.json" + suffix)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
 	sysConfigFile, err := ioutil.ReadFile(sysConfigFilePath)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
-	err = jsoniter.Unmarshal(sysConfigFile, &sys)
+	err = jsoniter.Unmarshal(sysConfigFile, &c.Sys)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
 	appConfigFilePath, err := xdgbasedir.GetConfigFileLocation("monujo/app.json" + suffix)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
 	appConfigFile, err := ioutil.ReadFile(appConfigFilePath)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
 
-	err = jsoniter.Unmarshal(appConfigFile, &app)
+	err = jsoniter.Unmarshal(appConfigFile, &c.App)
 	if err != nil {
-		panic(err)
+		return c, err
 	}
-}
 
-func Db() dbConf {
-	return db
-}
-
-func Sys() sysConf {
-	return sys
-}
-
-func App() appConf {
-	return app
+	return c, nil
 }
