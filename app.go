@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/mgierok/monujo/console"
@@ -253,40 +252,9 @@ func (a *app) listOperations() {
 }
 
 func (a *app) update() {
-	ownedStocks, err := a.repository.OwnedStocks()
+	sources := a.pickSource()
+	quotes, err := a.repository.UpdateQuotes(sources)
 	log.PanicIfError(err)
-	currencies, err := a.repository.Currencies()
-	log.PanicIfError(err)
-
-	var importMap = make(map[string]Securities)
-	tickers := ownedStocks.DistinctTickers()
-	tickers = append(tickers, currencies.CurrencyPairs("PLN")...)
-
-	securities, err := a.repository.Securities(tickers)
-	log.PanicIfError(err)
-
-	for _, t := range tickers {
-		for _, s := range securities {
-			if s.Ticker == t {
-				importMap[s.QuotesSource] = append(importMap[s.QuotesSource], s)
-			}
-		}
-	}
-
-	var wg sync.WaitGroup
-	quotes := make(chan Quote)
-	for _, source := range a.pickSource() {
-		securities := importMap[source.Name]
-		if len(securities) > 0 {
-			wg.Add(1)
-			go source.Update(securities, quotes, &wg, a.config.App)
-		}
-	}
-
-	go func() {
-		wg.Wait()
-		close(quotes)
-	}()
 
 	for q := range quotes {
 		_, err = a.repository.StoreLatestQuote(q)
@@ -503,7 +471,11 @@ func (a *app) pickSource() Sources {
 		[]interface{}{"A", "All"},
 	}
 	i := 1
-	for _, s := range a.repository.Sources() {
+
+	sources, err := a.repository.Sources()
+	log.PanicIfError(err)
+
+	for _, s := range sources {
 		dict[strconv.Itoa(i)] = s.Name
 		data = append(data, []interface{}{strconv.Itoa(i), s.Name})
 		i++
@@ -522,11 +494,11 @@ func (a *app) pickSource() Sources {
 	_, exists := dict[input]
 	if exists {
 		if input == "A" {
-			return a.repository.Sources()
+			return sources
 		} else if input == "Q" {
 			return Sources{}
 		} else {
-			for _, s := range a.repository.Sources() {
+			for _, s := range sources {
 				if s.Name == dict[input] {
 					return Sources{s}
 				}

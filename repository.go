@@ -17,12 +17,14 @@ import (
 )
 
 type Repository struct {
-	db *sqlx.DB
+	db     *sqlx.DB
+	config Config
 }
 
-func NewRepository(db *sqlx.DB) (*Repository, error) {
+func NewRepository(db *sqlx.DB, c *Config) (*Repository, error) {
 	return &Repository{
-		db: db,
+		db:     db,
+		config: *c,
 	}, nil
 }
 
@@ -269,27 +271,38 @@ func (r *Repository) StoreSecurity(s Security) (string, error) {
 }
 
 type Source struct {
-	Name string
+	Name string `db:"name"`
 }
+
+type Stooq Source
+type Ingturbo Source
+type Google Source
+type Alphavantage Source
+type Bankier Source
 
 type Sources []Source
 
 func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGroup, config AppConf) {
 	defer wg.Done()
 	if s.Name == "stooq" {
-		s.stooq(securities, quotes)
+		ss := Stooq(s)
+		ss.stooq(securities, quotes)
 	} else if s.Name == "ingturbo" {
-		s.ingturbo(securities, quotes)
+		ss := Ingturbo(s)
+		ss.ingturbo(securities, quotes)
 	} else if s.Name == "google" {
-		s.stooq(securities, quotes)
+		ss := Stooq(s)
+		ss.stooq(securities, quotes)
 	} else if s.Name == "alphavantage" {
-		s.alphavantage(securities, quotes, config.Alphavantagekey)
+		ss := Alphavantage(s)
+		ss.alphavantage(securities, quotes, config.Alphavantagekey)
 	} else if s.Name == "bankier" {
-		s.bankier(securities, quotes)
+		ss := Bankier(s)
+		ss.update(securities, quotes)
 	}
 }
 
-func (s Source) stooq(securities Securities, quotes chan Quote) {
+func (s Stooq) stooq(securities Securities, quotes chan Quote) {
 	const layout = "20060102"
 	now := time.Now()
 	var client http.Client
@@ -334,7 +347,7 @@ func (s Source) stooq(securities Securities, quotes chan Quote) {
 	}
 }
 
-func (s Source) ingturbo(securities Securities, quotes chan Quote) {
+func (s Ingturbo) ingturbo(securities Securities, quotes chan Quote) {
 	type response struct {
 		BidQuotes [][]float64 `json:"BidQuotes"`
 	}
@@ -376,7 +389,7 @@ func (s Source) ingturbo(securities Securities, quotes chan Quote) {
 	}
 }
 
-func (s Source) alphavantage(securities Securities, quotes chan Quote, key string) {
+func (s Alphavantage) alphavantage(securities Securities, quotes chan Quote, key string) {
 	var client http.Client
 	for _, s := range securities {
 		resp, err := client.Get(
@@ -417,7 +430,7 @@ func (s Source) alphavantage(securities Securities, quotes chan Quote, key strin
 	}
 }
 
-func (s Source) google(securities Securities, quotes chan Quote) {
+func (s Google) google(securities Securities, quotes chan Quote) {
 	type gQuote struct {
 		Ticker   string `json:"t"`
 		Exchange string `json:"e"`
@@ -471,7 +484,7 @@ func (s Source) google(securities Securities, quotes chan Quote) {
 	}
 }
 
-func (s Source) bankier(securities Securities, quotes chan Quote) {
+func (s Bankier) update(securities Securities, quotes chan Quote) {
 	type bQuote struct {
 		Open   float64
 		High   float64
@@ -570,16 +583,61 @@ func (s Source) bankier(securities Securities, quotes chan Quote) {
 	}
 }
 
-var sources = Sources{
-	{Name: "stooq"},
-	{Name: "google"},
-	{Name: "ingturbo"},
-	{Name: "alphavantage"},
-	{Name: "bankier"},
+func (r *Repository) Sources() (Sources, error) {
+	s := Sources{}
+	err := r.db.Select(&s,
+		`SELECT
+			DISTINCT quotes_source AS name
+			FROM securities
+			ORDER BY quotes_source
+			`)
+	return s, err
 }
 
-func (r *Repository) Sources() Sources {
-	return sources
+func (r *Repository) UpdateQuotes(sources Sources) (chan Quote, error) {
+	quotes := make(chan Quote)
+
+	ownedStocks, err := r.OwnedStocks()
+	if err != nil {
+		return quotes, err
+	}
+	currencies, err := r.Currencies()
+	if err != nil {
+		return quotes, err
+	}
+
+	var importMap = make(map[string]Securities)
+	tickers := ownedStocks.DistinctTickers()
+	tickers = append(tickers, currencies.CurrencyPairs("PLN")...)
+
+	securities, err := r.Securities(tickers)
+	if err != nil {
+		return quotes, err
+	}
+
+	for _, t := range tickers {
+		for _, s := range securities {
+			if s.Ticker == t {
+				importMap[s.QuotesSource] = append(importMap[s.QuotesSource], s)
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+	for _, source := range sources {
+		securities := importMap[source.Name]
+		if len(securities) > 0 {
+			wg.Add(1)
+			go source.Update(securities, quotes, &wg, r.config.App)
+		}
+	}
+
+	go func() {
+		wg.Wait()
+		close(quotes)
+	}()
+
+	return quotes, nil
 }
 
 type Stock struct {

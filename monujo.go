@@ -42,7 +42,7 @@ func main() {
 	defer db.Close()
 
 	console, _ := console.New()
-	repository, _ := NewRepository(db)
+	repository, _ := NewRepository(db, conf)
 	a, _ := NewApp(conf, repository, console, console)
 
 	if len(dump) > 0 {
