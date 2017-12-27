@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mgierok/monujo/console"
 	"github.com/mgierok/monujo/log"
 )
 
@@ -27,7 +26,6 @@ type Input interface {
 
 type app struct {
 	config     Config
-	console    console.Console
 	screen     Screen
 	input      Input
 	repository Repository
