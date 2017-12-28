@@ -9,34 +9,34 @@
 			"revisionTime": "2017-03-29T17:17:47Z"
 		},
 		{
-			"checksumSHA1": "SEZulQ/Gm4f6P6/c3waZjXxvl0g=",
+			"checksumSHA1": "QmAzbypFddS3Tl/HDca0X0zXZ/M=",
 			"path": "github.com/jmoiron/sqlx",
-			"revision": "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f",
-			"revisionTime": "2017-04-30T19:46:03Z"
+			"revision": "de8647470aafe4854c976707c431dbe1eb2822c6",
+			"revisionTime": "2017-12-11T23:49:05Z"
 		},
 		{
-			"checksumSHA1": "xXjxKqs3ECyWO5zjIVb2qgj9rcU=",
+			"checksumSHA1": "bXFrevmVL5Q2EwYlRHlPihxvAJA=",
 			"path": "github.com/jmoiron/sqlx/reflectx",
-			"revision": "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f",
-			"revisionTime": "2017-04-30T19:46:03Z"
+			"revision": "de8647470aafe4854c976707c431dbe1eb2822c6",
+			"revisionTime": "2017-12-11T23:49:05Z"
 		},
 		{
-			"checksumSHA1": "bVblvxjXM6xs+yx9CcRtDqINZlo=",
+			"checksumSHA1": "50J+ClsLONoc78uu+sDrdJ6IWPA=",
 			"path": "github.com/json-iterator/go",
-			"revision": "2dc0031b26575ddf5dab09ab7795105a05575473",
-			"revisionTime": "2017-08-25T04:53:23Z"
+			"revision": "96fcb84835b0447f3de9d7addb313c5487071533",
+			"revisionTime": "2017-12-23T02:52:17Z"
 		},
 		{
-			"checksumSHA1": "A3ymiEhz0WaT+sfK1aJhlqhf41o=",
+			"checksumSHA1": "IfZcD4U1dtllJKlPNeD2aU4Jn98=",
 			"path": "github.com/lib/pq",
-			"revision": "e42267488fe361b9dc034be7a6bffef5b195bceb",
-			"revisionTime": "2017-08-10T06:12:20Z"
+			"revision": "83612a56d3dd153a94a629cd64925371c9adad78",
+			"revisionTime": "2017-11-26T05:04:59Z"
 		},
 		{
-			"checksumSHA1": "q5SZBWFVC3wOIzftf+l/h5WLG1k=",
+			"checksumSHA1": "AU3fA8Sm33Vj9PBoRPSeYfxLRuE=",
 			"path": "github.com/lib/pq/oid",
-			"revision": "e42267488fe361b9dc034be7a6bffef5b195bceb",
-			"revisionTime": "2017-08-10T06:12:20Z"
+			"revision": "83612a56d3dd153a94a629cd64925371c9adad78",
+			"revisionTime": "2017-11-26T05:04:59Z"
 		},
 		{
 			"checksumSHA1": "cJE7dphDlam/i7PhnsyosNWtbd4=",
@@ -45,10 +45,10 @@
 			"revisionTime": "2017-05-10T07:48:58Z"
 		},
 		{
-			"checksumSHA1": "3DXd47ue3PGGyFBGXqXSOI/iIeI=",
+			"checksumSHA1": "SpK8YNVt9qqOzQK1y6EfpO02TlM=",
 			"path": "github.com/olekukonko/tablewriter",
-			"revision": "be5337e7b39e64e5f91445ce7e721888dbab7387",
-			"revisionTime": "2017-07-19T10:10:40Z"
+			"revision": "65fec0d89a572b4367094e2058d3ebe667de3b60",
+			"revisionTime": "2017-12-03T15:10:07Z"
 		}
 	],
 	"rootPath": "github.com/mgierok/monujo"
