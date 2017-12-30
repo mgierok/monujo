@@ -163,6 +163,18 @@ CREATE AGGREGATE first(anyelement, integer) (
 );
 
 
+SET default_with_oids = false;
+
+--
+-- Name: annual_range; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE annual_range (
+    year smallint NOT NULL,
+    range daterange NOT NULL
+);
+
+
 --
 -- Name: currencies; Type: VIEW; Schema: public; Owner: -
 --
@@ -416,8 +428,9 @@ CREATE VIEW portfolios_ext AS
                     d.out_transaction_id,
                     d.disposed_shares,
                     d.disposed
-                   FROM (disposals d
-                     JOIN transactions tout ON (((d.out_transaction_id = tout.transaction_id) AND (date_part('year'::text, tout.date) = date_part('year'::text, ('now'::text)::date)))))
+                   FROM ((disposals d
+                     JOIN transactions tout ON ((d.out_transaction_id = tout.transaction_id)))
+                     JOIN annual_range ar_1 ON (((ar_1.range @> tout.date) AND (ar_1.year = (date_part('year'::text, ('now'::text)::date))::smallint))))
                 ), annual_transactions AS (
                  SELECT annual_disposals.in_transaction_id AS transaction_id
                    FROM annual_disposals
@@ -580,6 +593,14 @@ ALTER TABLE ONLY portfolios ALTER COLUMN portfolio_id SET DEFAULT nextval('portf
 --
 
 ALTER TABLE ONLY transactions ALTER COLUMN transaction_id SET DEFAULT nextval('transactions_transaction_id_seq'::regclass);
+
+
+--
+-- Name: annual_range_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY annual_range
+    ADD CONSTRAINT annual_range_pkey PRIMARY KEY (year);
 
 
 --
