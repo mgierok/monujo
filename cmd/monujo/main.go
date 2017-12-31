@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/mgierok/monujo"
 	"github.com/mgierok/monujo/console"
 
@@ -25,17 +23,7 @@ func main() {
 		panic(err)
 	}
 
-	dbinfo := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		conf.Db.Host,
-		conf.Db.Port,
-		conf.Db.User,
-		conf.Db.Password,
-		conf.Db.Dbname,
-	)
-
-	db, err := sqlx.Connect("postgres", dbinfo)
-
+	db, err := monujo.Connect(conf.Db())
 	if err != nil {
 		panic(err)
 	}

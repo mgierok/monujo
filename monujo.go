@@ -31,9 +31,9 @@ type monujo struct {
 	repository Repository
 }
 
-func New(c *Config, r *Repository, s Screen, i Input) (*monujo, error) {
+func New(c Config, r *Repository, s Screen, i Input) (*monujo, error) {
 	m := new(monujo)
-	m.config = *c
+	m.config = c
 	m.screen = s
 	m.input = i
 	m.repository = *r
@@ -635,6 +635,8 @@ func (m *monujo) isShort() bool {
 }
 
 func (m *monujo) Dump(dumptype string, file string) {
+	dbConf := m.config.Db()
+	sysConf := m.config.Sys()
 	if len(file) == 0 {
 		fmt.Println("Output file is not set")
 		return
@@ -643,13 +645,13 @@ func (m *monujo) Dump(dumptype string, file string) {
 	var cmd *exec.Cmd
 	if dumptype == "schema" {
 		cmd = exec.Command(
-			m.config.Sys.Pgdump,
+			sysConf.Pgdump,
 			"--host",
-			m.config.Db.Host,
+			dbConf.Host,
 			"--port",
-			m.config.Db.Port,
+			dbConf.Port,
 			"--username",
-			m.config.Db.User,
+			dbConf.User,
 			"--no-password",
 			"--format",
 			"plain",
@@ -660,17 +662,17 @@ func (m *monujo) Dump(dumptype string, file string) {
 			"--no-unlogged-table-data",
 			"--file",
 			file,
-			m.config.Db.Dbname,
+			dbConf.Dbname,
 		)
 	} else if dumptype == "data" {
 		cmd = exec.Command(
-			m.config.Sys.Pgdump,
+			sysConf.Pgdump,
 			"--host",
-			m.config.Db.Host,
+			dbConf.Host,
 			"--port",
-			m.config.Db.Port,
+			dbConf.Port,
 			"--username",
-			m.config.Db.User,
+			dbConf.User,
 			"--no-password",
 			"--format",
 			"plain",
@@ -683,7 +685,7 @@ func (m *monujo) Dump(dumptype string, file string) {
 			"--no-unlogged-table-data",
 			"--file",
 			file,
-			m.config.Db.Dbname,
+			dbConf.Dbname,
 		)
 	} else {
 		fmt.Println("Invalid dump type, please specify 'schema' or 'data'")

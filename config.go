@@ -7,13 +7,19 @@ import (
 	"github.com/json-iterator/go"
 )
 
-type Config struct {
-	Db  DbConf
-	Sys SysConf
-	App AppConf
+type config struct {
+	db  dbConf
+	sys sysConf
+	app appConf
 }
 
-type DbConf struct {
+type Config interface {
+	Db() dbConf
+	Sys() sysConf
+	App() appConf
+}
+
+type dbConf struct {
 	Host     string
 	Port     string
 	User     string
@@ -21,16 +27,16 @@ type DbConf struct {
 	Dbname   string
 }
 
-type SysConf struct {
+type sysConf struct {
 	Pgdump string
 }
 
-type AppConf struct {
+type appConf struct {
 	Alphavantagekey string
 }
 
-func NewConfig(env string) (*Config, error) {
-	c := new(Config)
+func NewConfig(env string) (Config, error) {
+	c := new(config)
 	var suffix string
 	if len(env) > 0 {
 		suffix = "." + env
@@ -46,7 +52,7 @@ func NewConfig(env string) (*Config, error) {
 		return c, err
 	}
 
-	err = jsoniter.Unmarshal(dbConfigFile, &c.Db)
+	err = jsoniter.Unmarshal(dbConfigFile, &c.db)
 	if err != nil {
 		return c, err
 	}
@@ -61,7 +67,7 @@ func NewConfig(env string) (*Config, error) {
 		return c, err
 	}
 
-	err = jsoniter.Unmarshal(sysConfigFile, &c.Sys)
+	err = jsoniter.Unmarshal(sysConfigFile, &c.sys)
 	if err != nil {
 		return c, err
 	}
@@ -76,10 +82,22 @@ func NewConfig(env string) (*Config, error) {
 		return c, err
 	}
 
-	err = jsoniter.Unmarshal(appConfigFile, &c.App)
+	err = jsoniter.Unmarshal(appConfigFile, &c.app)
 	if err != nil {
 		return c, err
 	}
 
 	return c, nil
+}
+
+func (c *config) Db() dbConf {
+	return c.db
+}
+
+func (c *config) Sys() sysConf {
+	return c.sys
+}
+
+func (c *config) App() appConf {
+	return c.app
 }

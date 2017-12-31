@@ -21,10 +21,10 @@ type Repository struct {
 	config Config
 }
 
-func NewRepository(db *sqlx.DB, c *Config) (*Repository, error) {
+func NewRepository(db *sqlx.DB, c Config) (*Repository, error) {
 	return &Repository{
 		db:     db,
-		config: *c,
+		config: c,
 	}, nil
 }
 
@@ -282,7 +282,7 @@ type Bankier Source
 
 type Sources []Source
 
-func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGroup, config AppConf) {
+func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGroup, config appConf) {
 	defer wg.Done()
 	if s.Name == "stooq" {
 		ss := Stooq(s)
@@ -628,7 +628,7 @@ func (r *Repository) UpdateQuotes(sources Sources) (chan Quote, error) {
 		securities := importMap[source.Name]
 		if len(securities) > 0 {
 			wg.Add(1)
-			go source.Update(securities, quotes, &wg, r.config.App)
+			go source.Update(securities, quotes, &wg, r.config.App())
 		}
 	}
 
