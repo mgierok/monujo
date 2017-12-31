@@ -1,4 +1,4 @@
-package main
+package monujo
 
 import (
 	"io/ioutil"
