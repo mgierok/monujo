@@ -15,6 +15,8 @@ import (
 
 type Screen interface {
 	PrintTable(header []string, data [][]interface{})
+	PrintText(format string, a ...interface{})
+	NewLine(n ...int)
 	Clear()
 }
 
@@ -46,7 +48,7 @@ func (m *monujo) Run() {
 }
 
 func (m *monujo) mainMenu() {
-	fmt.Println("Choose action")
+	m.screen.PrintText("Choose action\n")
 	data := [][]interface{}{
 		[]interface{}{"S", "Summary"},
 		[]interface{}{"PT", "Put transaction"},
@@ -122,8 +124,7 @@ func (m *monujo) summary() {
 	m.screen.PrintTable(header, data)
 
 	data = data[0:0]
-	fmt.Println("")
-	fmt.Println("")
+	m.screen.NewLine(2)
 
 	portfoliosExt, err := m.repository.PortfoliosExt()
 	log.PanicIfError(err)
@@ -194,7 +195,7 @@ func (m *monujo) listTransactions() {
 	}
 
 	m.screen.PrintTable(header, data)
-	fmt.Println("")
+	m.screen.NewLine()
 
 	if !m.yesOrNo("Do you want to delete single transaction?") {
 		return
@@ -203,7 +204,7 @@ func (m *monujo) listTransactions() {
 	transaction := m.pickTransaction(transactions)
 	err = m.repository.DeleteTransaction(transaction)
 	log.PanicIfError(err)
-	fmt.Println("Transaction has been removed")
+	m.screen.PrintText("Transaction has been removed\n")
 }
 
 func (m *monujo) listOperations() {
@@ -237,7 +238,7 @@ func (m *monujo) listOperations() {
 	}
 
 	m.screen.PrintTable(header, data)
-	fmt.Println("")
+	m.screen.NewLine()
 
 	if !m.yesOrNo("Do you want to delete single financial operation?") {
 		return
@@ -246,7 +247,7 @@ func (m *monujo) listOperations() {
 	operation := m.pickOperation(operations)
 	err = m.repository.DeleteOperation(operation)
 	log.PanicIfError(err)
-	fmt.Println("Operation has been removed")
+	m.screen.PrintText("Operation has been removed\n")
 }
 
 func (m *monujo) update() {
@@ -257,9 +258,9 @@ func (m *monujo) update() {
 	for q := range quotes {
 		_, err = m.repository.StoreLatestQuote(q)
 		if err == nil {
-			fmt.Printf("Ticker: %s Quote: %f\n", q.Ticker, q.Close)
+			m.screen.PrintText("Ticker: %s Quote: %f\n", q.Ticker, q.Close)
 		} else {
-			fmt.Printf("Update failed for %s\n", q.Ticker)
+			m.screen.PrintText("Update failed for %s\n", q.Ticker)
 		}
 	}
 }
@@ -293,15 +294,15 @@ func (m *monujo) putOperation() {
 
 	m.screen.Clear()
 	m.screen.PrintTable([]string{}, summary)
-	fmt.Println("")
+	m.screen.NewLine()
 
 	if m.yesOrNo("Do you want to store this operation?") {
 		operationId, err := m.repository.StoreOperation(o)
 		log.PanicIfError(err)
 
-		fmt.Printf("Operation has been recorded with an ID: %d\n", operationId)
+		m.screen.PrintText("Operation has been recorded with an ID: %d\n", operationId)
 	} else {
-		fmt.Println("Operation has not been recorded")
+		m.screen.PrintText("Operation has not been recorded\n")
 	}
 
 }
@@ -341,29 +342,29 @@ func (m *monujo) putTransaction() {
 
 	m.screen.Clear()
 	m.screen.PrintTable([]string{}, summary)
-	fmt.Println("")
+	m.screen.NewLine()
 
 	if m.yesOrNo("Do you want to store this transaction?") {
 		transactionId, err := m.repository.StoreTransaction(t)
 		log.PanicIfError(err)
 
-		fmt.Printf("Transaction has been recorded with an ID: %d\n", transactionId)
+		m.screen.PrintText("Transaction has been recorded with an ID: %d\n", transactionId)
 
 		m.securityDetails(t.Ticker)
 	} else {
-		fmt.Println("Transaction has not been recorded")
+		m.screen.PrintText("Transaction has not been recorded\n")
 	}
 }
 
 func (m *monujo) pickTransaction(transactions Transactions) Transaction {
 	var input string
-	fmt.Print("Transaction ID: ")
+	m.screen.PrintText("Transaction ID: ")
 	fmt.Scanln(&input)
 
 	transactionId, err := strconv.ParseInt(input, 10, 64)
 
 	if nil != err {
-		fmt.Printf("\n%s is not a valid transaction ID\n\n", input)
+		m.screen.PrintText("\n%s is not a valid transaction ID\n\n", input)
 		return m.pickTransaction(transactions)
 	} else {
 		for _, t := range transactions {
@@ -372,20 +373,20 @@ func (m *monujo) pickTransaction(transactions Transactions) Transaction {
 			}
 		}
 
-		fmt.Printf("\n%s is not a valid transaction ID\n\n", input)
+		m.screen.PrintText("\n%s is not a valid transaction ID\n\n", input)
 		return m.pickTransaction(transactions)
 	}
 }
 
 func (m *monujo) pickOperation(operations Operations) Operation {
 	var input string
-	fmt.Print("Operation ID: ")
+	m.screen.PrintText("Operation ID: ")
 	fmt.Scanln(&input)
 
 	operationId, err := strconv.ParseInt(input, 10, 64)
 
 	if nil != err {
-		fmt.Printf("\n%s is not a valid operation ID\n\n", input)
+		m.screen.PrintText("\n%s is not a valid operation ID\n\n", input)
 		return m.pickOperation(operations)
 	} else {
 		for _, o := range operations {
@@ -394,14 +395,15 @@ func (m *monujo) pickOperation(operations Operations) Operation {
 			}
 		}
 
-		fmt.Printf("\n%s is not a valid operation ID\n\n", input)
+		m.screen.PrintText("\n%s is not a valid operation ID\n\n", input)
 		return m.pickOperation(operations)
 	}
 }
 
 func (m *monujo) yesOrNo(question string) bool {
-	fmt.Println(question)
-	fmt.Println("(Y)es or (N)o?")
+	m.screen.PrintText(question)
+	m.screen.NewLine()
+	m.screen.PrintText("(Y)es or (N)o?\n")
 
 	var input string
 	fmt.Scanln(&input)
@@ -417,8 +419,8 @@ func (m *monujo) yesOrNo(question string) bool {
 }
 
 func (m *monujo) portfolio() Portfolio {
-	fmt.Println("Choose portfolio")
-	fmt.Println("")
+	m.screen.PrintText("Choose portfolio\n")
+	m.screen.NewLine()
 
 	portfolios, err := m.repository.Portfolios()
 	log.PanicIfError(err)
@@ -434,16 +436,16 @@ func (m *monujo) portfolio() Portfolio {
 	}
 
 	m.screen.PrintTable(header, data)
-	fmt.Println("")
+	m.screen.NewLine()
 
 	var input string
-	fmt.Print("Portfolio ID: ")
+	m.screen.PrintText("Portfolio ID: ")
 	fmt.Scanln(&input)
 
 	portfolioId, err := strconv.ParseInt(input, 10, 64)
 
 	if nil != err {
-		fmt.Printf("\n%s is not a valid portfolio ID\n\n", input)
+		m.screen.PrintText("\n%s is not a valid portfolio ID\n\n", input)
 		return m.portfolio()
 	} else {
 		for _, p := range portfolios {
@@ -452,14 +454,14 @@ func (m *monujo) portfolio() Portfolio {
 			}
 		}
 
-		fmt.Printf("\n%s is not a valid portfolio ID\n\n", input)
+		m.screen.PrintText("\n%s is not a valid portfolio ID\n\n", input)
 		return m.portfolio()
 	}
 }
 
 func (m *monujo) pickSource() Sources {
-	fmt.Println("Choose from which source you want to update quotes")
-	fmt.Println("")
+	m.screen.PrintText("Choose from which source you want to update quotes")
+	m.screen.NewLine(2)
 
 	dict := map[string]string{
 		"A": "All",
@@ -481,7 +483,7 @@ func (m *monujo) pickSource() Sources {
 	data = append(data, []interface{}{"Q", "Quit"})
 
 	m.screen.PrintTable([]string{}, data)
-	fmt.Println("")
+	m.screen.NewLine()
 
 	var input string
 	fmt.Scanln(&input)
@@ -507,8 +509,8 @@ func (m *monujo) pickSource() Sources {
 }
 
 func (m *monujo) financialOperationType() FinancialOperationType {
-	fmt.Println("Choose operation type")
-	fmt.Println("")
+	m.screen.PrintText("Choose operation type")
+	m.screen.NewLine(2)
 
 	ots, err := m.repository.FinancialOperationTypes()
 	log.PanicIfError(err)
@@ -525,9 +527,9 @@ func (m *monujo) financialOperationType() FinancialOperationType {
 	}
 
 	m.screen.PrintTable(header, data)
-	fmt.Println("")
+	m.screen.NewLine()
 
-	fmt.Print("Type: ")
+	m.screen.PrintText("Type: ")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	ot := scanner.Text()
@@ -539,7 +541,7 @@ func (m *monujo) financialOperationType() FinancialOperationType {
 	if exists {
 		return dict[ot]
 	} else {
-		fmt.Printf("\n%s is not a valid operation type\n\n", ot)
+		m.screen.PrintText("\n%s is not a valid operation type\n\n", ot)
 		return m.financialOperationType()
 	}
 }
@@ -569,12 +571,12 @@ func (m *monujo) securityDetails(ticker string) {
 	t, err := m.repository.StoreSecurity(s)
 	log.PanicIfError(err)
 
-	fmt.Printf("Security details of %s has been stored\n", strings.TrimSpace(t))
+	m.screen.PrintText("Security details of %s has been stored\n", strings.TrimSpace(t))
 }
 
 func (m *monujo) pickCurrency() string {
-	fmt.Println("Choose currency")
-	fmt.Println("")
+	m.screen.PrintText("Choose currency")
+	m.screen.NewLine(2)
 
 	currencies, err := m.repository.Currencies()
 	log.PanicIfError(err)
@@ -591,10 +593,10 @@ func (m *monujo) pickCurrency() string {
 	}
 
 	m.screen.PrintTable(header, data)
-	fmt.Println("")
+	m.screen.NewLine()
 
 	var c string
-	fmt.Print("Currency: ")
+	m.screen.PrintText("Currency: ")
 	fmt.Scanln(&c)
 
 	c = strings.ToUpper(c)
@@ -603,7 +605,7 @@ func (m *monujo) pickCurrency() string {
 	if exists {
 		return c
 	} else {
-		fmt.Printf("\n%s is not a valid currency\n\n", c)
+		m.screen.PrintText("\n%s is not a valid currency\n\n", c)
 		return m.pickCurrency()
 	}
 }
@@ -621,7 +623,7 @@ func (m *monujo) shares() float64 {
 
 func (m *monujo) isShort() bool {
 	var input string
-	fmt.Println("(B)UY or (S)ELL?")
+	m.screen.PrintText("(B)UY or (S)ELL?\n")
 	fmt.Scanln(&input)
 	input = strings.ToUpper(input)
 
@@ -638,7 +640,7 @@ func (m *monujo) Dump(dumptype string, file string) {
 	dbConf := m.config.Db()
 	sysConf := m.config.Sys()
 	if len(file) == 0 {
-		fmt.Println("Output file is not set")
+		m.screen.PrintText("Output file is not set")
 		return
 	}
 
@@ -688,15 +690,17 @@ func (m *monujo) Dump(dumptype string, file string) {
 			dbConf.Dbname,
 		)
 	} else {
-		fmt.Println("Invalid dump type, please specify 'schema' or 'data'")
+		m.screen.PrintText("Invalid dump type, please specify 'schema' or 'data'\n")
 		return
 	}
 
 	stdout, err := cmd.Output()
 	if err != nil {
-		fmt.Println(err.Error())
+		m.screen.PrintText(err.Error())
+		m.screen.NewLine()
 		return
 	}
 
-	fmt.Println(string(stdout))
+	m.screen.PrintText(string(stdout))
+	m.screen.NewLine()
 }

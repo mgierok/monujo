@@ -2,6 +2,7 @@ package console
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -24,6 +25,23 @@ func (c *Console) PrintTable(header []string, data [][]interface{}) {
 	table.AppendBulk(newData)
 	table.SetRowLine(true)
 	table.Render()
+}
+
+func (c *Console) PrintText(format string, a ...interface{}) {
+	fmt.Printf(format, a...)
+}
+
+func (c *Console) NewLine(n ...int) {
+	var lines int
+	if len(n) == 0 {
+		lines = 1
+	} else {
+		lines = n[0]
+	}
+
+	for i := 0; i < lines; i++ {
+		c.PrintText("\n")
+	}
 }
 
 func (c *Console) Clear() {
