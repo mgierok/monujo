@@ -10,7 +10,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-func (c *Console) DrawTable(header []string, data [][]interface{}) {
+func (c *Console) PrintTable(header []string, data [][]interface{}) {
 	newData := make([][]string, len(data))
 	for i, r := range data {
 		newData[i] = make([]string, len(data[i]))

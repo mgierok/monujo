@@ -14,7 +14,7 @@ import (
 )
 
 type Screen interface {
-	DrawTable(header []string, data [][]interface{})
+	PrintTable(header []string, data [][]interface{})
 	Clear()
 }
 
@@ -57,7 +57,7 @@ func (m *monujo) mainMenu() {
 		[]interface{}{"Q", "Quit"},
 	}
 
-	m.screen.DrawTable([]string{}, data)
+	m.screen.PrintTable([]string{}, data)
 
 	var action string
 	fmt.Scanln(&action)
@@ -119,7 +119,7 @@ func (m *monujo) summary() {
 		"Gain BC%",
 	}
 
-	m.screen.DrawTable(header, data)
+	m.screen.PrintTable(header, data)
 
 	data = data[0:0]
 	fmt.Println("")
@@ -154,7 +154,7 @@ func (m *monujo) summary() {
 		"Month Balance",
 	}
 
-	m.screen.DrawTable(header, data)
+	m.screen.PrintTable(header, data)
 }
 
 func (m *monujo) listTransactions() {
@@ -193,7 +193,7 @@ func (m *monujo) listTransactions() {
 		"Tax",
 	}
 
-	m.screen.DrawTable(header, data)
+	m.screen.PrintTable(header, data)
 	fmt.Println("")
 
 	if !m.yesOrNo("Do you want to delete single transaction?") {
@@ -236,7 +236,7 @@ func (m *monujo) listOperations() {
 		"Commision",
 	}
 
-	m.screen.DrawTable(header, data)
+	m.screen.PrintTable(header, data)
 	fmt.Println("")
 
 	if !m.yesOrNo("Do you want to delete single financial operation?") {
@@ -292,7 +292,7 @@ func (m *monujo) putOperation() {
 	}
 
 	m.screen.Clear()
-	m.screen.DrawTable([]string{}, summary)
+	m.screen.PrintTable([]string{}, summary)
 	fmt.Println("")
 
 	if m.yesOrNo("Do you want to store this operation?") {
@@ -340,7 +340,7 @@ func (m *monujo) putTransaction() {
 	}
 
 	m.screen.Clear()
-	m.screen.DrawTable([]string{}, summary)
+	m.screen.PrintTable([]string{}, summary)
 	fmt.Println("")
 
 	if m.yesOrNo("Do you want to store this transaction?") {
@@ -433,7 +433,7 @@ func (m *monujo) portfolio() Portfolio {
 		data = append(data, []interface{}{p.PortfolioId, p.Name})
 	}
 
-	m.screen.DrawTable(header, data)
+	m.screen.PrintTable(header, data)
 	fmt.Println("")
 
 	var input string
@@ -480,7 +480,7 @@ func (m *monujo) pickSource() Sources {
 	}
 	data = append(data, []interface{}{"Q", "Quit"})
 
-	m.screen.DrawTable([]string{}, data)
+	m.screen.PrintTable([]string{}, data)
 	fmt.Println("")
 
 	var input string
@@ -524,7 +524,7 @@ func (m *monujo) financialOperationType() FinancialOperationType {
 		data = append(data, []interface{}{ot.Type})
 	}
 
-	m.screen.DrawTable(header, data)
+	m.screen.PrintTable(header, data)
 	fmt.Println("")
 
 	fmt.Print("Type: ")
@@ -590,7 +590,7 @@ func (m *monujo) pickCurrency() string {
 		data = append(data, []interface{}{c.Symbol})
 	}
 
-	m.screen.DrawTable(header, data)
+	m.screen.PrintTable(header, data)
 	fmt.Println("")
 
 	var c string
