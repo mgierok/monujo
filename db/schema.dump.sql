@@ -501,7 +501,7 @@ CREATE VIEW portfolios_ext AS
  SELECT p.portfolio_id,
     p.name,
     p.currency,
-    round(((((c.value - c.commision) - e.value) - e.commision) - e.tax), 2) AS cache_value,
+    round(((((c.value - c.commision) - COALESCE(e.value, (0)::numeric)) - COALESCE(e.commision, (0)::numeric)) - COALESCE(e.tax, (0)::numeric)), 2) AS cache_value,
     round(gss.value, 2) AS gain_of_sold_shares,
     e.commision,
     e.tax,
