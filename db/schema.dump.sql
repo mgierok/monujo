@@ -399,6 +399,22 @@ CREATE VIEW portfolios_ext AS
             sum(o.commision) AS commision
            FROM operations o
           GROUP BY o.portfolio_id
+        ), dividend AS (
+         SELECT o.portfolio_id,
+            sum(o.value) AS value,
+            sum(o.commision) AS commision,
+            sum(o.tax) AS tax
+           FROM operations o
+          WHERE (o.type = 'dividend'::financing_operation)
+          GROUP BY o.portfolio_id
+        ), bondinterest AS (
+         SELECT o.portfolio_id,
+            sum(o.value) AS value,
+            sum(o.commision) AS commision,
+            sum(o.tax) AS tax
+           FROM operations o
+          WHERE (o.type = 'bond interest'::financing_operation)
+          GROUP BY o.portfolio_id
         ), expenditure AS (
          SELECT t.portfolio_id,
             sum((((t.shares * t.price) * t.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS value,
@@ -409,12 +425,12 @@ CREATE VIEW portfolios_ext AS
           GROUP BY t.portfolio_id
         ), gain_of_sold_shares AS (
          SELECT tin.portfolio_id,
-            sum(((((d.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric)) - (((d.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric)))) AS value
-           FROM (((disposals d
-             JOIN transactions tin ON ((tin.transaction_id = d.in_transaction_id)))
-             JOIN transactions tout ON ((tout.transaction_id = d.out_transaction_id)))
+            sum(((((d_1.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric)) - (((d_1.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric)))) AS value
+           FROM (((disposals d_1
+             JOIN transactions tin ON ((tin.transaction_id = d_1.in_transaction_id)))
+             JOIN transactions tout ON ((tout.transaction_id = d_1.out_transaction_id)))
              LEFT JOIN securities s ON ((s.ticker = tin.ticker)))
-          WHERE d.disposed
+          WHERE d_1.disposed
           GROUP BY tin.portfolio_id
         ), owned_shares_summary AS (
          SELECT s.portfolio_id,
@@ -424,12 +440,12 @@ CREATE VIEW portfolios_ext AS
           GROUP BY s.portfolio_id
         ), annual_balance AS (
          WITH annual_disposals AS (
-                 SELECT d.in_transaction_id,
-                    d.out_transaction_id,
-                    d.disposed_shares,
-                    d.disposed
-                   FROM ((disposals d
-                     JOIN transactions tout ON ((d.out_transaction_id = tout.transaction_id)))
+                 SELECT d_1.in_transaction_id,
+                    d_1.out_transaction_id,
+                    d_1.disposed_shares,
+                    d_1.disposed
+                   FROM ((disposals d_1
+                     JOIN transactions tout ON ((d_1.out_transaction_id = tout.transaction_id)))
                      JOIN annual_range ar_1 ON (((ar_1.range @> tout.date) AND (ar_1.year = (date_part('year'::text, ('now'::text)::date))::smallint))))
                 ), annual_transactions AS (
                  SELECT annual_disposals.in_transaction_id AS transaction_id
@@ -446,13 +462,13 @@ CREATE VIEW portfolios_ext AS
                   GROUP BY t.portfolio_id
                 ), annual_revenue AS (
                  SELECT tin.portfolio_id,
-                    sum((((d.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS outcome,
-                    sum((((d.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS income
-                   FROM (((annual_disposals d
-                     JOIN transactions tout ON ((d.out_transaction_id = tout.transaction_id)))
-                     JOIN transactions tin ON ((d.in_transaction_id = tin.transaction_id)))
+                    sum((((d_1.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS outcome,
+                    sum((((d_1.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS income
+                   FROM (((annual_disposals d_1
+                     JOIN transactions tout ON ((d_1.out_transaction_id = tout.transaction_id)))
+                     JOIN transactions tin ON ((d_1.in_transaction_id = tin.transaction_id)))
                      LEFT JOIN securities s ON ((s.ticker = tin.ticker)))
-                  WHERE d.disposed
+                  WHERE d_1.disposed
                   GROUP BY tin.portfolio_id
                 )
          SELECT ar.portfolio_id,
@@ -462,12 +478,12 @@ CREATE VIEW portfolios_ext AS
              JOIN annual_costs ac ON ((ac.portfolio_id = ar.portfolio_id)))
         ), month_balance AS (
          WITH month_disposals AS (
-                 SELECT d.in_transaction_id,
-                    d.out_transaction_id,
-                    d.disposed_shares,
-                    d.disposed
-                   FROM (disposals d
-                     JOIN transactions tout ON ((((d.out_transaction_id = tout.transaction_id) AND (date_part('year'::text, tout.date) = date_part('year'::text, ('now'::text)::date))) AND (date_part('month'::text, tout.date) = date_part('month'::text, ('now'::text)::date)))))
+                 SELECT d_1.in_transaction_id,
+                    d_1.out_transaction_id,
+                    d_1.disposed_shares,
+                    d_1.disposed
+                   FROM (disposals d_1
+                     JOIN transactions tout ON ((((d_1.out_transaction_id = tout.transaction_id) AND (date_part('year'::text, tout.date) = date_part('year'::text, ('now'::text)::date))) AND (date_part('month'::text, tout.date) = date_part('month'::text, ('now'::text)::date)))))
                 ), month_transactions AS (
                  SELECT month_disposals.in_transaction_id AS transaction_id
                    FROM month_disposals
@@ -483,13 +499,13 @@ CREATE VIEW portfolios_ext AS
                   GROUP BY t.portfolio_id
                 ), month_revenue AS (
                  SELECT tin.portfolio_id,
-                    sum((((d.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS outcome,
-                    sum((((d.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS income
-                   FROM (((month_disposals d
-                     JOIN transactions tout ON ((d.out_transaction_id = tout.transaction_id)))
-                     JOIN transactions tin ON ((d.in_transaction_id = tin.transaction_id)))
+                    sum((((d_1.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS outcome,
+                    sum((((d_1.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric))) AS income
+                   FROM (((month_disposals d_1
+                     JOIN transactions tout ON ((d_1.out_transaction_id = tout.transaction_id)))
+                     JOIN transactions tin ON ((d_1.in_transaction_id = tin.transaction_id)))
                      LEFT JOIN securities s ON ((s.ticker = tin.ticker)))
-                  WHERE d.disposed
+                  WHERE d_1.disposed
                   GROUP BY tin.portfolio_id
                 )
          SELECT mr.portfolio_id,
@@ -506,13 +522,15 @@ CREATE VIEW portfolios_ext AS
     e.commision,
     e.tax,
     round(oss.gain_of_owned_shares, 2) AS gain_of_owned_shares,
-    round((COALESCE(gss.value, (0)::numeric) + COALESCE(oss.gain_of_owned_shares, (0)::numeric)), 2) AS estimated_gain,
-    round((((COALESCE(gss.value, (0)::numeric) + COALESCE(oss.gain_of_owned_shares, (0)::numeric)) - e.commision) - e.tax), 2) AS estimated_gain_costs_inc,
+    round((((COALESCE(gss.value, (0)::numeric) + COALESCE(oss.gain_of_owned_shares, (0)::numeric)) + COALESCE(d.value, (0)::numeric)) + COALESCE(bi.value, (0)::numeric)), 2) AS estimated_gain,
+    round((((((((((COALESCE(gss.value, (0)::numeric) + COALESCE(oss.gain_of_owned_shares, (0)::numeric)) + COALESCE(d.value, (0)::numeric)) + COALESCE(bi.value, (0)::numeric)) - e.commision) - e.tax) - COALESCE(d.commision, (0)::numeric)) - COALESCE(d.tax, (0)::numeric)) - COALESCE(bi.commision, (0)::numeric)) - COALESCE(bi.tax, (0)::numeric)), 2) AS estimated_gain_costs_inc,
     round((COALESCE(((((c.value - c.commision) - e.value) - e.commision) - e.tax), (0)::numeric) + COALESCE(oss.market_value_base_currency, (0)::numeric)), 2) AS estimated_value,
     COALESCE(round((ab.income - ab.outcome), 2), (0)::numeric) AS annual_balance,
     COALESCE(round((mb.income - mb.outcome), 2), (0)::numeric) AS month_balance
-   FROM ((((((portfolios p
+   FROM ((((((((portfolios p
      LEFT JOIN cache c ON ((c.portfolio_id = p.portfolio_id)))
+     LEFT JOIN dividend d ON ((d.portfolio_id = p.portfolio_id)))
+     LEFT JOIN bondinterest bi ON ((bi.portfolio_id = p.portfolio_id)))
      LEFT JOIN expenditure e ON ((e.portfolio_id = p.portfolio_id)))
      LEFT JOIN gain_of_sold_shares gss ON ((gss.portfolio_id = p.portfolio_id)))
      LEFT JOIN owned_shares_summary oss ON ((oss.portfolio_id = p.portfolio_id)))
