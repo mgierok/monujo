@@ -228,6 +228,75 @@ CREATE TABLE latest_quotes (
 
 
 --
+-- Name: securities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE securities (
+    ticker character(12) NOT NULL,
+    short_name character varying(128) NOT NULL,
+    full_name character varying(128) NOT NULL,
+    market character varying(8) NOT NULL,
+    leverage numeric DEFAULT 1 NOT NULL,
+    quotes_source quotes_source NOT NULL,
+    ticker_bankier character(12)
+);
+
+
+--
+-- Name: transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE transactions (
+    transaction_id integer NOT NULL,
+    portfolio_id integer NOT NULL,
+    date date NOT NULL,
+    ticker character(12) NOT NULL,
+    price numeric NOT NULL,
+    currency currency NOT NULL,
+    shares numeric NOT NULL,
+    commision numeric NOT NULL,
+    exchange_rate numeric NOT NULL,
+    tax numeric DEFAULT 0 NOT NULL,
+    CONSTRAINT transactions_commision_check CHECK ((commision >= (0)::numeric)),
+    CONSTRAINT transactions_exchange_rate_check CHECK ((exchange_rate > (0)::numeric)),
+    CONSTRAINT transactions_price_check CHECK ((price > (0)::numeric)),
+    CONSTRAINT transactions_shares_check CHECK ((shares <> (0)::numeric))
+);
+
+
+--
+-- Name: most_profitable; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW most_profitable AS
+ SELECT
+        CASE
+            WHEN ("position"((tin.ticker)::text, 'F'::text) = 1) THEN ((regexp_matches((tin.ticker)::text, '^(F.{3})[UZM]{1}[0-9]{2}$'::text))::text)::bpchar
+            ELSE
+            CASE
+                WHEN ("position"((tin.ticker)::text, 'INT'::text) = 1) THEN ((regexp_matches((tin.ticker)::text, '^INT(.{4})[0-9]{4,5}$'::text))::text)::bpchar
+                ELSE tin.ticker
+            END
+        END AS ticker,
+    sum(((((d.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric)) - (((d.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric)))) AS value
+   FROM (((disposals d
+     JOIN transactions tin ON ((tin.transaction_id = d.in_transaction_id)))
+     JOIN transactions tout ON ((tout.transaction_id = d.out_transaction_id)))
+     LEFT JOIN securities s ON ((s.ticker = tin.ticker)))
+  WHERE d.disposed
+  GROUP BY
+        CASE
+            WHEN ("position"((tin.ticker)::text, 'F'::text) = 1) THEN ((regexp_matches((tin.ticker)::text, '^(F.{3})[UZM]{1}[0-9]{2}$'::text))::text)::bpchar
+            ELSE
+            CASE
+                WHEN ("position"((tin.ticker)::text, 'INT'::text) = 1) THEN ((regexp_matches((tin.ticker)::text, '^INT(.{4})[0-9]{4,5}$'::text))::text)::bpchar
+                ELSE tin.ticker
+            END
+        END
+  ORDER BY sum(((((d.disposed_shares * tout.price) * tout.exchange_rate) * COALESCE(s.leverage, (1)::numeric)) - (((d.disposed_shares * tin.price) * tin.exchange_rate) * COALESCE(s.leverage, (1)::numeric)))) DESC;
+
+
+--
 -- Name: operations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -270,43 +339,6 @@ CREATE TABLE portfolios (
     portfolio_id integer NOT NULL,
     name character varying(128) NOT NULL,
     currency currency NOT NULL
-);
-
-
---
--- Name: securities; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE securities (
-    ticker character(12) NOT NULL,
-    short_name character varying(128) NOT NULL,
-    full_name character varying(128) NOT NULL,
-    market character varying(8) NOT NULL,
-    leverage numeric DEFAULT 1 NOT NULL,
-    quotes_source quotes_source NOT NULL,
-    ticker_bankier character(12)
-);
-
-
---
--- Name: transactions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE transactions (
-    transaction_id integer NOT NULL,
-    portfolio_id integer NOT NULL,
-    date date NOT NULL,
-    ticker character(12) NOT NULL,
-    price numeric NOT NULL,
-    currency currency NOT NULL,
-    shares numeric NOT NULL,
-    commision numeric NOT NULL,
-    exchange_rate numeric NOT NULL,
-    tax numeric DEFAULT 0 NOT NULL,
-    CONSTRAINT transactions_commision_check CHECK ((commision >= (0)::numeric)),
-    CONSTRAINT transactions_exchange_rate_check CHECK ((exchange_rate > (0)::numeric)),
-    CONSTRAINT transactions_price_check CHECK ((price > (0)::numeric)),
-    CONSTRAINT transactions_shares_check CHECK ((shares <> (0)::numeric))
 );
 
 
