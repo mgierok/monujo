@@ -275,6 +275,7 @@ type Source struct {
 }
 
 type Stooq Source
+type Sw Source
 type Ingturbo Source
 type Google Source
 type Alphavantage Source
@@ -293,6 +294,9 @@ func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGr
 	} else if s.Name == "google" {
 		ss := Stooq(s)
 		ss.stooq(securities, quotes)
+	} else if s.Name == "sw" {
+		ss := Sw(s)
+		ss.sw(securities, quotes)
 	} else if s.Name == "alphavantage" {
 		ss := Alphavantage(s)
 		ss.alphavantage(securities, quotes, config.Alphavantagekey)
@@ -343,6 +347,41 @@ func (s Stooq) stooq(securities Securities, quotes chan Quote) {
 
 				quotes <- quote
 			}
+		}
+	}
+}
+
+func (s Sw) sw(securities Securities, quotes chan Quote) {
+	const layout = "2006-01-02"
+	now := time.Now()
+	var client http.Client
+	for _, s := range securities {
+		resp, err := client.Get(
+			fmt.Sprintf(
+				"https://www.stockwatch.pl/obligacje/emitent/xxx/%s",
+				strings.Trim(s.TickerBankier.String, " "),
+			),
+		)
+		if err != nil {
+			fmt.Printf("Update failed for %s\n", s.Ticker)
+		} else {
+			body, _ := ioutil.ReadAll(resp.Body)
+			regex, _ := regexp.Compile(`(?sU)<input type="text" id="bCourse" value="([0-9,]+)" />`)
+			match := regex.FindStringSubmatch(string(body))
+			v, _ := strconv.ParseFloat(strings.Replace(match[1], ",", ".", 1), 64)
+
+			quote := Quote{
+				Ticker:  s.Ticker,
+				Date:    now,
+				Open:    v,
+				High:    v,
+				Low:     v,
+				Close:   v,
+				Volume:  0,
+				OpenInt: 0,
+			}
+
+			quotes <- quote
 		}
 	}
 }
