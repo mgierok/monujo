@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -368,6 +369,25 @@ func (s Sw) sw(securities Securities, quotes chan Quote) {
 			body, _ := ioutil.ReadAll(resp.Body)
 			regex, _ := regexp.Compile(`(?sU)<input type="text" id="bCourse" value="([0-9,]+)" />`)
 			match := regex.FindStringSubmatch(string(body))
+
+			resp, err = client.PostForm(
+				"https://www.stockwatch.pl/async/BondCalculatorAsync.aspx",
+				url.Values{
+					"bondName": {
+						strings.Trim(s.TickerBankier.String, " "),
+					},
+					"ticker":    {"xxx"},
+					"brokerage": {"0"},
+					"taxRate":   {"0"},
+					"course":    {match[1]},
+					"date":      {now.Format(layout)},
+					"isPrivate": {"False"},
+				},
+			)
+			body, _ = ioutil.ReadAll(resp.Body)
+
+			regex, _ = regexp.Compile(`(?sU)Cena rozliczeniowa <span>\(PLN\)</span></td>.+<td>([0-9,]+)</td>`)
+			match = regex.FindStringSubmatch(string(body))
 			v, _ := strconv.ParseFloat(strings.Replace(match[1], ",", ".", 1), 64)
 
 			quote := Quote{
