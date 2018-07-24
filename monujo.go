@@ -102,10 +102,13 @@ func (m *monujo) summary() {
 			os.Shares,
 			os.LastPrice,
 			os.AveragePrice,
+			os.AveragePriceAdjusted,
 			os.InvestmentBaseCurrency,
 			os.MarketValueBaseCurrency,
 			os.GainBaseCurrency,
 			os.PercentageGainBaseCurrency,
+			os.GainAdjusted,
+			os.PercentageGainAdjusted,
 		})
 	}
 
@@ -114,11 +117,14 @@ func (m *monujo) summary() {
 		"Stock",
 		"Shares",
 		"Last Price",
-		"Average Price",
+		"Avg Price",
+		"Avg Price ADJ",
 		"Investment BC",
 		"Market Value BC",
 		"Gain BC",
 		"Gain BC%",
+		"Gain ADJ",
+		"Gain ADJ%",
 	}
 
 	m.screen.PrintTable(header, data)

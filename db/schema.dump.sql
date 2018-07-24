@@ -333,6 +333,39 @@ ALTER SEQUENCE operations_operation_id_seq OWNED BY operations.operation_id;
 
 
 --
+-- Name: owned_stocks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE owned_stocks (
+    portfolio_id integer,
+    portfolio_name character varying(128),
+    ticker character(12),
+    short_name character varying(128),
+    market character varying(8),
+    shares numeric,
+    last_price numeric,
+    currency currency,
+    exchange_rate numeric,
+    last_price_base_currency numeric,
+    average_price numeric,
+    average_price_base_currency numeric,
+    leverage numeric,
+    gain numeric,
+    percentage_gain numeric,
+    gain_base_currency numeric,
+    percentage_gain_base_currency numeric,
+    market_value numeric,
+    market_value_base_currency numeric,
+    investment_base_currency numeric,
+    average_price_adjusted numeric,
+    gain_adjusted numeric,
+    percentage_gain_adjusted numeric
+);
+
+ALTER TABLE ONLY owned_stocks REPLICA IDENTITY NOTHING;
+
+
+--
 -- Name: portfolios; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -341,80 +374,6 @@ CREATE TABLE portfolios (
     name character varying(128) NOT NULL,
     currency currency NOT NULL
 );
-
-
---
--- Name: owned_stocks; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW owned_stocks AS
- WITH remaining_shares AS (
-         SELECT t.transaction_id,
-            (t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) AS shares
-           FROM (transactions t
-             LEFT JOIN disposals d ON ((t.transaction_id = d.in_transaction_id)))
-          GROUP BY t.transaction_id, t.shares
-         HAVING ((t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) <> (0)::numeric)
-        ), owned_shares AS (
-         SELECT t.portfolio_id,
-            t.ticker,
-            t.currency,
-            sum(rs.shares) AS shares,
-            sum(((rs.shares * t.price) * COALESCE(s_1.leverage, (1)::numeric))) AS expenditure,
-            sum((((rs.shares * t.price) * t.exchange_rate) * COALESCE(s_1.leverage, (1)::numeric))) AS expenditure_base_currency,
-            (sum((rs.shares * t.price)) / sum(rs.shares)) AS average_price,
-            (sum(((rs.shares * t.price) * t.exchange_rate)) / sum(rs.shares)) AS average_price_base_currency,
-            first(t.price, 1 ORDER BY t.date DESC, t.transaction_id DESC) AS last_purchase_price
-           FROM ((transactions t
-             JOIN remaining_shares rs ON ((rs.transaction_id = t.transaction_id)))
-             LEFT JOIN securities s_1 ON ((s_1.ticker = t.ticker)))
-          GROUP BY t.portfolio_id, t.ticker, t.currency
-        )
- SELECT p.portfolio_id,
-    p.name AS portfolio_name,
-    os.ticker,
-    s.short_name,
-    s.market,
-    os.shares,
-    q.close AS last_price,
-    os.currency,
-        CASE
-            WHEN (os.currency = p.currency) THEN (1)::numeric
-            ELSE e.close
-        END AS exchange_rate,
-    (q.close *
-        CASE
-            WHEN (os.currency = p.currency) THEN (1)::numeric
-            ELSE e.close
-        END) AS last_price_base_currency,
-    round(os.average_price, 2) AS average_price,
-    round(os.average_price_base_currency, 2) AS average_price_base_currency,
-    COALESCE(s.leverage, (1)::numeric) AS leverage,
-    round((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure), 2) AS gain,
-    round((((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure) / abs(os.expenditure)) * (100)::numeric), 2) AS percentage_gain,
-    round(((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
-        CASE
-            WHEN (os.currency = p.currency) THEN (1)::numeric
-            ELSE e.close
-        END) - os.expenditure_base_currency), 2) AS gain_base_currency,
-    round(((((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
-        CASE
-            WHEN (os.currency = p.currency) THEN (1)::numeric
-            ELSE e.close
-        END) - os.expenditure_base_currency) / abs(os.expenditure_base_currency)) * (100)::numeric), 2) AS percentage_gain_base_currency,
-    round(((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)), 2) AS market_value,
-    round((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
-        CASE
-            WHEN (os.currency = p.currency) THEN (1)::numeric
-            ELSE e.close
-        END), 2) AS market_value_base_currency,
-    round(os.expenditure_base_currency, 2) AS investment_base_currency
-   FROM ((((owned_shares os
-     JOIN portfolios p ON ((os.portfolio_id = p.portfolio_id)))
-     LEFT JOIN securities s ON ((os.ticker = s.ticker)))
-     LEFT JOIN latest_quotes q ON ((os.ticker = q.ticker)))
-     LEFT JOIN latest_quotes e ON ((((e.ticker)::text = ((os.currency)::text || (p.currency)::text)) AND (os.currency <> p.currency))))
-  ORDER BY p.portfolio_id;
 
 
 --
@@ -591,6 +550,37 @@ ALTER SEQUENCE portfolios_portfolio_id_seq OWNED BY portfolios.portfolio_id;
 
 
 --
+-- Name: price_adjustments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE price_adjustments (
+    price_adjustment_id integer NOT NULL,
+    transaction_id integer NOT NULL,
+    date date NOT NULL,
+    adjustment numeric NOT NULL
+);
+
+
+--
+-- Name: price_adjustments_price_adjustment_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE price_adjustments_price_adjustment_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: price_adjustments_price_adjustment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE price_adjustments_price_adjustment_id_seq OWNED BY price_adjustments.price_adjustment_id;
+
+
+--
 -- Name: quotes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -637,6 +627,13 @@ ALTER TABLE ONLY operations ALTER COLUMN operation_id SET DEFAULT nextval('opera
 --
 
 ALTER TABLE ONLY portfolios ALTER COLUMN portfolio_id SET DEFAULT nextval('portfolios_portfolio_id_seq'::regclass);
+
+
+--
+-- Name: price_adjustment_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY price_adjustments ALTER COLUMN price_adjustment_id SET DEFAULT nextval('price_adjustments_price_adjustment_id_seq'::regclass);
 
 
 --
@@ -687,6 +684,14 @@ ALTER TABLE ONLY portfolios
 
 
 --
+-- Name: price_adjustments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY price_adjustments
+    ADD CONSTRAINT price_adjustments_pkey PRIMARY KEY (price_adjustment_id);
+
+
+--
 -- Name: quotes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -708,6 +713,87 @@ ALTER TABLE ONLY securities
 
 ALTER TABLE ONLY transactions
     ADD CONSTRAINT transactions_pkey PRIMARY KEY (transaction_id);
+
+
+--
+-- Name: _RETURN; Type: RULE; Schema: public; Owner: -
+--
+
+CREATE RULE "_RETURN" AS
+    ON SELECT TO owned_stocks DO INSTEAD  WITH remaining_shares AS (
+         SELECT t.transaction_id,
+            (t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) AS shares,
+            (t.price - sum(COALESCE(pa.adjustment, (0)::numeric))) AS price_adjusted
+           FROM ((transactions t
+             LEFT JOIN disposals d ON ((t.transaction_id = d.in_transaction_id)))
+             LEFT JOIN price_adjustments pa ON ((pa.transaction_id = t.transaction_id)))
+          GROUP BY t.transaction_id, t.shares
+         HAVING ((t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) <> (0)::numeric)
+        ), owned_shares AS (
+         SELECT t.portfolio_id,
+            t.ticker,
+            t.currency,
+            sum(rs.shares) AS shares,
+            sum(((rs.shares * t.price) * COALESCE(s_1.leverage, (1)::numeric))) AS expenditure,
+            sum((((rs.shares * t.price) * t.exchange_rate) * COALESCE(s_1.leverage, (1)::numeric))) AS expenditure_base_currency,
+            (sum((rs.shares * t.price)) / sum(rs.shares)) AS average_price,
+            (sum(((rs.shares * t.price) * t.exchange_rate)) / sum(rs.shares)) AS average_price_base_currency,
+            first(t.price, 1 ORDER BY t.date DESC, t.transaction_id DESC) AS last_purchase_price,
+            (sum((rs.shares * rs.price_adjusted)) / sum(rs.shares)) AS average_price_adjusted,
+            sum(((rs.shares * rs.price_adjusted) * COALESCE(s_1.leverage, (1)::numeric))) AS expenditure_adjusted
+           FROM ((transactions t
+             JOIN remaining_shares rs ON ((rs.transaction_id = t.transaction_id)))
+             LEFT JOIN securities s_1 ON ((s_1.ticker = t.ticker)))
+          GROUP BY t.portfolio_id, t.ticker, t.currency
+        )
+ SELECT p.portfolio_id,
+    p.name AS portfolio_name,
+    os.ticker,
+    s.short_name,
+    s.market,
+    os.shares,
+    q.close AS last_price,
+    os.currency,
+        CASE
+            WHEN (os.currency = p.currency) THEN (1)::numeric
+            ELSE e.close
+        END AS exchange_rate,
+    (q.close *
+        CASE
+            WHEN (os.currency = p.currency) THEN (1)::numeric
+            ELSE e.close
+        END) AS last_price_base_currency,
+    round(os.average_price, 2) AS average_price,
+    round(os.average_price_base_currency, 2) AS average_price_base_currency,
+    COALESCE(s.leverage, (1)::numeric) AS leverage,
+    round((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure), 2) AS gain,
+    round((((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure) / abs(os.expenditure)) * (100)::numeric), 2) AS percentage_gain,
+    round(((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
+        CASE
+            WHEN (os.currency = p.currency) THEN (1)::numeric
+            ELSE e.close
+        END) - os.expenditure_base_currency), 2) AS gain_base_currency,
+    round(((((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
+        CASE
+            WHEN (os.currency = p.currency) THEN (1)::numeric
+            ELSE e.close
+        END) - os.expenditure_base_currency) / abs(os.expenditure_base_currency)) * (100)::numeric), 2) AS percentage_gain_base_currency,
+    round(((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)), 2) AS market_value,
+    round((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
+        CASE
+            WHEN (os.currency = p.currency) THEN (1)::numeric
+            ELSE e.close
+        END), 2) AS market_value_base_currency,
+    round(os.expenditure_base_currency, 2) AS investment_base_currency,
+    round(os.average_price_adjusted, 2) AS average_price_adjusted,
+    round((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure_adjusted), 2) AS gain_adjusted,
+    round((((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure_adjusted) / abs(os.expenditure_adjusted)) * (100)::numeric), 2) AS percentage_gain_adjusted
+   FROM ((((owned_shares os
+     JOIN portfolios p ON ((os.portfolio_id = p.portfolio_id)))
+     LEFT JOIN securities s ON ((os.ticker = s.ticker)))
+     LEFT JOIN latest_quotes q ON ((os.ticker = q.ticker)))
+     LEFT JOIN latest_quotes e ON ((((e.ticker)::text = ((os.currency)::text || (p.currency)::text)) AND (os.currency <> p.currency))))
+  ORDER BY p.portfolio_id;
 
 
 --
@@ -753,6 +839,14 @@ ALTER TABLE ONLY disposals
 
 ALTER TABLE ONLY operations
     ADD CONSTRAINT operations_portfolio_id_fkey FOREIGN KEY (portfolio_id) REFERENCES portfolios(portfolio_id);
+
+
+--
+-- Name: price_adjustments_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY price_adjustments
+    ADD CONSTRAINT price_adjustments_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --

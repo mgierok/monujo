@@ -748,6 +748,9 @@ type OwnedStock struct {
 	PercentageGain             sql.NullFloat64 `db:"percentage_gain"`
 	GainBaseCurrency           sql.NullFloat64 `db:"gain_base_currency"`
 	PercentageGainBaseCurrency sql.NullFloat64 `db:"percentage_gain_base_currency"`
+	AveragePriceAdjusted       float64         `db:"average_price_adjusted"`
+	GainAdjusted               sql.NullFloat64 `db:"gain_adjusted"`
+	PercentageGainAdjusted     sql.NullFloat64 `db:"percentage_gain_adjusted"`
 }
 
 type OwnedStocks []OwnedStock
@@ -795,7 +798,10 @@ func (r *Repository) OwnedStocks() (OwnedStocks, error) {
 			gain,
 			percentage_gain,
 			gain_base_currency,
-			percentage_gain_base_currency
+			percentage_gain_base_currency,
+			average_price_adjusted,
+			gain_adjusted,
+			percentage_gain_adjusted
 			FROM owned_stocks
 			ORDER BY portfolio_id
 			`)
