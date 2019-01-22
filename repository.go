@@ -561,7 +561,7 @@ func (s Bankier) update(securities Securities, quotes chan Quote) {
 		return v
 	}
 
-	regex, _ := regexp.Compile(`(?sU)<td class="colWalor textNowrap">.+<a title=".+" href=".+">(.+)</a>.+<td class="colKurs change.+">(.+)</td>.+<td class="colObrot">(.+)</td>.+<td class="colOtwarcie">(.+)</td>.+<td class="calMaxi">(.+)</td>.+<td class="calMini">(.+)</td>.+<td class="colAktualizacja">(.+)</td>`)
+	regex, _ := regexp.Compile(`(?sU)<td class="colWalor textNowrap">.+<a title=".+" href=".+">(.+)</a>.+<td class="colKurs change.+">(.+)</td>.+<td class="colObrot">(.+)</td>.+<td class="colOtwarcie">(.+)</td>.+<td class="calMaxi">(.+)</td>.+<td class="calMini">(.+)</td>.+<td class="colAktualizacja".+>(.+)</td>`)
 	urls := [3]string{
 		"https://www.bankier.pl/gielda/notowania/akcje",
 		"https://www.bankier.pl/gielda/notowania/new-connect",
