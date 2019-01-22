@@ -862,6 +862,31 @@ func (r *Repository) PortfolioTransactions(portfolio Portfolio) (Transactions, e
 	return transactions, err
 }
 
+func (r *Repository) FilterTransactions(portfolio Portfolio, query string) (Transactions, error) {
+	transactions := Transactions{}
+	err := r.db.Select(&transactions,
+		`SELECT
+		transaction_id,
+		portfolio_id,
+		date,
+		ticker,
+		price,
+		currency,
+		shares,
+		commision,
+		exchange_rate,
+		tax
+	FROM transactions
+	WHERE portfolio_id = $1
+		AND (ticker ILIKE %$2%)
+	ORDER BY
+		date ASC,
+		transaction_id ASC
+	`,
+		portfolio.PortfolioId, query)
+	return transactions, err
+}
+
 func (r *Repository) DeleteTransaction(transaction Transaction) error {
 	_, err := r.db.Exec("DELETE FROM transactions WHERE portfolio_id = $1 AND transaction_id = $2", transaction.PortfolioId, transaction.TransactionId)
 	return err

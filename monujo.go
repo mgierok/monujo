@@ -201,16 +201,43 @@ func (m *monujo) listTransactions() {
 	}
 
 	m.screen.PrintTable(header, data)
+
 	m.screen.NewLine()
 
-	if !m.yesOrNo("Do you want to delete single transaction?") {
-		return
+	m.screen.PrintText("Choose action\n")
+	data = [][]interface{}{
+		[]interface{}{"D", "Delete transaction"},
+		[]interface{}{"E", "Edit transaction"},
+		[]interface{}{"F", "Filter transactions"},
 	}
 
+	m.screen.PrintTable([]string{}, data)
+
+	var action string
+	fmt.Scanln(&action)
+	action = strings.ToUpper(action)
+
+	if action == "D" {
+		m.deleteTransaction(transactions)
+	} else if action == "PT" {
+		m.editTransaction()
+	} else if action == "LT" {
+		m.filterTransactions(portfolio)
+	}
+}
+
+func (m *monujo) deleteTransaction(transactions Transactions) {
 	transaction := m.pickTransaction(transactions)
-	err = m.repository.DeleteTransaction(transaction)
+	err := m.repository.DeleteTransaction(transaction)
 	log.PanicIfError(err)
 	m.screen.PrintText("Transaction has been removed\n")
+}
+
+func (m *monujo) editTransaction() {
+
+}
+
+func (m *monujo) filterTransactions(portfolio Portfolio) {
 }
 
 func (m *monujo) listOperations() {
