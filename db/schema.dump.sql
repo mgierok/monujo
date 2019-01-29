@@ -258,6 +258,7 @@ CREATE TABLE transactions (
     commision numeric NOT NULL,
     exchange_rate numeric NOT NULL,
     tax numeric DEFAULT 0 NOT NULL,
+    price_alt numeric,
     CONSTRAINT transactions_commision_check CHECK ((commision >= (0)::numeric)),
     CONSTRAINT transactions_exchange_rate_check CHECK ((exchange_rate > (0)::numeric)),
     CONSTRAINT transactions_price_check CHECK ((price > (0)::numeric)),
