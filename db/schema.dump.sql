@@ -727,7 +727,10 @@ CREATE RULE "_RETURN" AS
             (t.price - sum(COALESCE(pa.adjustment, (0)::numeric))) AS price_adjusted
            FROM ((transactions t
              LEFT JOIN disposals d ON ((t.transaction_id = d.in_transaction_id)))
-             LEFT JOIN price_adjustments pa ON ((pa.transaction_id = t.transaction_id)))
+             LEFT JOIN ( SELECT price_adjustments.transaction_id,
+                    sum(price_adjustments.adjustment) AS adjustment
+                   FROM price_adjustments
+                  GROUP BY price_adjustments.transaction_id) pa ON ((pa.transaction_id = t.transaction_id)))
           GROUP BY t.transaction_id, t.shares
          HAVING ((t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) <> (0)::numeric)
         ), owned_shares AS (
