@@ -107,8 +107,8 @@ func (m *monujo) summary() {
 			os.MarketValueBaseCurrency,
 			os.GainBaseCurrency,
 			os.PercentageGainBaseCurrency,
-			os.GainAdjusted,
-			os.PercentageGainAdjusted,
+			os.GainAdjustedBaseCurrency,
+			os.PercentageGainAdjustedBaseCurrency,
 		})
 	}
 
@@ -123,8 +123,8 @@ func (m *monujo) summary() {
 		"Market Value BC",
 		"Gain BC",
 		"Gain BC%",
-		"Gain ADJ",
-		"Gain ADJ%",
+		"Gain ADJ BC",
+		"Gain ADJ% BC",
 	}
 
 	m.screen.PrintTable(header, data)

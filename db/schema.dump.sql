@@ -187,8 +187,6 @@ CREATE VIEW currencies AS
   WHERE (t.typname = 'currency'::name);
 
 
-SET default_with_oids = false;
-
 --
 -- Name: disposals; Type: TABLE; Schema: public; Owner: -
 --
@@ -360,7 +358,9 @@ CREATE TABLE owned_stocks (
     investment_base_currency numeric,
     average_price_adjusted numeric,
     gain_adjusted numeric,
-    percentage_gain_adjusted numeric
+    percentage_gain_adjusted numeric,
+    gain_adjusted_base_currency numeric,
+    percentage_gain_adjusted_base_currency numeric
 );
 
 ALTER TABLE ONLY owned_stocks REPLICA IDENTITY NOTHING;
@@ -558,7 +558,8 @@ CREATE TABLE price_adjustments (
     price_adjustment_id integer NOT NULL,
     transaction_id integer NOT NULL,
     date date NOT NULL,
-    adjustment numeric NOT NULL
+    adjustment numeric NOT NULL,
+    exchange_rate numeric DEFAULT 1
 );
 
 
@@ -724,7 +725,8 @@ CREATE RULE "_RETURN" AS
     ON SELECT TO owned_stocks DO INSTEAD  WITH remaining_shares AS (
          SELECT t.transaction_id,
             (t.shares - sum(COALESCE(d.disposed_shares, (0)::numeric))) AS shares,
-            (t.price - sum(COALESCE(pa.adjustment, (0)::numeric))) AS price_adjusted
+            (t.price - sum(COALESCE(pa.adjustment, (0)::numeric))) AS price_adjusted,
+            ((t.price * t.exchange_rate) - sum(COALESCE((pa.adjustment * t.exchange_rate), (0)::numeric))) AS price_adjusted_base_currency
            FROM ((transactions t
              LEFT JOIN disposals d ON ((t.transaction_id = d.in_transaction_id)))
              LEFT JOIN ( SELECT price_adjustments.transaction_id,
@@ -744,7 +746,9 @@ CREATE RULE "_RETURN" AS
             (sum(((rs.shares * t.price) * t.exchange_rate)) / sum(rs.shares)) AS average_price_base_currency,
             first(t.price, 1 ORDER BY t.date DESC, t.transaction_id DESC) AS last_purchase_price,
             (sum((rs.shares * rs.price_adjusted)) / sum(rs.shares)) AS average_price_adjusted,
-            sum(((rs.shares * rs.price_adjusted) * COALESCE(s_1.leverage, (1)::numeric))) AS expenditure_adjusted
+            sum(((rs.shares * rs.price_adjusted) * COALESCE(s_1.leverage, (1)::numeric))) AS expenditure_adjusted,
+            (sum((rs.shares * rs.price_adjusted_base_currency)) / sum(rs.shares)) AS average_price_adjusted_base_currency,
+            sum(((rs.shares * rs.price_adjusted_base_currency) * COALESCE(s_1.leverage, (1)::numeric))) AS expenditure_adjusted_base_currency
            FROM ((transactions t
              JOIN remaining_shares rs ON ((rs.transaction_id = t.transaction_id)))
              LEFT JOIN securities s_1 ON ((s_1.ticker = t.ticker)))
@@ -791,7 +795,17 @@ CREATE RULE "_RETURN" AS
     round(os.expenditure_base_currency, 2) AS investment_base_currency,
     round(os.average_price_adjusted, 2) AS average_price_adjusted,
     round((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure_adjusted), 2) AS gain_adjusted,
-    round((((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure_adjusted) / abs(os.expenditure_adjusted)) * (100)::numeric), 2) AS percentage_gain_adjusted
+    round((((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) - os.expenditure_adjusted) / abs(os.expenditure_adjusted)) * (100)::numeric), 2) AS percentage_gain_adjusted,
+    round(((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
+        CASE
+            WHEN (os.currency = p.currency) THEN (1)::numeric
+            ELSE e.close
+        END) - os.expenditure_adjusted_base_currency), 2) AS gain_adjusted_base_currency,
+    round(((((((os.shares * COALESCE(q.close, os.last_purchase_price[1])) * COALESCE(s.leverage, (1)::numeric)) *
+        CASE
+            WHEN (os.currency = p.currency) THEN (1)::numeric
+            ELSE e.close
+        END) - os.expenditure_adjusted_base_currency) / abs(os.expenditure_adjusted_base_currency)) * (100)::numeric), 2) AS percentage_gain_adjusted_base_currency
    FROM ((((owned_shares os
      JOIN portfolios p ON ((os.portfolio_id = p.portfolio_id)))
      LEFT JOIN securities s ON ((os.ticker = s.ticker)))

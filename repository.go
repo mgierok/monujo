@@ -735,22 +735,24 @@ type Stock struct {
 
 type OwnedStock struct {
 	Stock
-	PortfolioId                int64           `db:"portfolio_id"`
-	PortfolioName              string          `db:"portfolio_name"`
-	Shares                     float64         `db:"shares"`
-	ExchangeRate               sql.NullFloat64 `db:"exchange_rate"`
-	LastPriceBaseCurrency      sql.NullFloat64 `db:"last_price_base_currency"`
-	AveragePrice               float64         `db:"average_price"`
-	AveragePriceBaseCurrency   float64         `db:"average_price_base_currency"`
-	InvestmentBaseCurrency     sql.NullFloat64 `db:"investment_base_currency"`
-	MarketValueBaseCurrency    sql.NullFloat64 `db:"market_value_base_currency"`
-	Gain                       sql.NullFloat64 `db:"gain"`
-	PercentageGain             sql.NullFloat64 `db:"percentage_gain"`
-	GainBaseCurrency           sql.NullFloat64 `db:"gain_base_currency"`
-	PercentageGainBaseCurrency sql.NullFloat64 `db:"percentage_gain_base_currency"`
-	AveragePriceAdjusted       float64         `db:"average_price_adjusted"`
-	GainAdjusted               sql.NullFloat64 `db:"gain_adjusted"`
-	PercentageGainAdjusted     sql.NullFloat64 `db:"percentage_gain_adjusted"`
+	PortfolioId                        int64           `db:"portfolio_id"`
+	PortfolioName                      string          `db:"portfolio_name"`
+	Shares                             float64         `db:"shares"`
+	ExchangeRate                       sql.NullFloat64 `db:"exchange_rate"`
+	LastPriceBaseCurrency              sql.NullFloat64 `db:"last_price_base_currency"`
+	AveragePrice                       float64         `db:"average_price"`
+	AveragePriceBaseCurrency           float64         `db:"average_price_base_currency"`
+	InvestmentBaseCurrency             sql.NullFloat64 `db:"investment_base_currency"`
+	MarketValueBaseCurrency            sql.NullFloat64 `db:"market_value_base_currency"`
+	Gain                               sql.NullFloat64 `db:"gain"`
+	PercentageGain                     sql.NullFloat64 `db:"percentage_gain"`
+	GainBaseCurrency                   sql.NullFloat64 `db:"gain_base_currency"`
+	PercentageGainBaseCurrency         sql.NullFloat64 `db:"percentage_gain_base_currency"`
+	AveragePriceAdjusted               float64         `db:"average_price_adjusted"`
+	GainAdjusted                       sql.NullFloat64 `db:"gain_adjusted"`
+	PercentageGainAdjusted             sql.NullFloat64 `db:"percentage_gain_adjusted"`
+	GainAdjustedBaseCurrency           sql.NullFloat64 `db:"gain_adjusted_base_currency"`
+	PercentageGainAdjustedBaseCurrency sql.NullFloat64 `db:"percentage_gain_adjusted_base_currency"`
 }
 
 type OwnedStocks []OwnedStock
@@ -801,7 +803,9 @@ func (r *Repository) OwnedStocks() (OwnedStocks, error) {
 			percentage_gain_base_currency,
 			average_price_adjusted,
 			gain_adjusted,
-			percentage_gain_adjusted
+			percentage_gain_adjusted,
+			gain_adjusted_base_currency,
+			percentage_gain_adjusted_base_currency
 			FROM owned_stocks
 			ORDER BY portfolio_id
 			`)
