@@ -596,9 +596,38 @@ func (s Bankier) update(securities Securities, quotes chan Quote) {
 		}
 	}
 
-	regex, _ = regexp.Compile(`(?sU)<td class="colWalor textNowrap">.+([A-Z0-9]+)[^A-Z0-9]+<td class="colKurs change.+">(.+)</td>.+<td class="colOtwarcie">(.+)</td>.+<td class="calMaxi">(.+)</td>.+<td class="calMini">(.+)</td>.+<td class="colAktualizacja">(.+)</td>`)
-	url := "https://www.bankier.pl/gielda/notowania/obligacje"
+	regex, _ = regexp.Compile(`(?sU)<td class="colWalor textNowrap">.+<a title=".+" href=".+">(.+)</a>.+<td class="colKurs change.+">(.+)</td>.+<td class="colOtwarcie">(.+)</td>.+<td class="calMaxi">(.+)</td>.+<td class="calMini">(.+)</td>.+<td class="colObrot">(.+)</td>.+<td class="colAktualizacja".+>(.+)</td>`)
+	url := "https://www.bankier.pl/gielda/notowania/indeksy-gpw"
 	resp, err := client.Get(url)
+	if err != nil {
+		fmt.Println(err)
+		fmt.Printf("Unable to read %s\n", url)
+	} else {
+		body, _ := ioutil.ReadAll(resp.Body)
+		matches := regex.FindAllStringSubmatch(string(body), -1)
+
+		for _, row := range matches {
+			close := toFloat(row[2])
+			open := toFloat(row[3])
+			high := toFloat(row[4])
+			low := toFloat(row[5])
+			volume := toFloat(row[6])
+			date, _ := time.Parse("2006.01.02 15:04", time.Now().Format("2006")+"."+row[7])
+
+			bQuotes[strings.ToUpper(row[1])] = bQuote{
+				Open:   open,
+				High:   high,
+				Low:    low,
+				Close:  close,
+				Volume: volume,
+				Date:   date,
+			}
+		}
+	}
+
+	regex, _ = regexp.Compile(`(?sU)<td class="colWalor textNowrap">.+([A-Z0-9]+)[^A-Z0-9]+<td class="colKurs change.+">(.+)</td>.+<td class="colOtwarcie">(.+)</td>.+<td class="calMaxi">(.+)</td>.+<td class="calMini">(.+)</td>.+<td class="colAktualizacja">(.+)</td>`)
+	url = "https://www.bankier.pl/gielda/notowania/obligacje"
+	resp, err = client.Get(url)
 	if err != nil {
 		fmt.Printf("Unable to read %s\n", url)
 	} else {
