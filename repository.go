@@ -281,6 +281,7 @@ type Ingturbo Source
 type Google Source
 type Alphavantage Source
 type Bankier Source
+type Generali Source
 
 type Sources []Source
 
@@ -303,6 +304,9 @@ func (s Source) Update(securities Securities, quotes chan Quote, wg *sync.WaitGr
 		ss.alphavantage(securities, quotes, config.Alphavantagekey)
 	} else if s.Name == "bankier" {
 		ss := Bankier(s)
+		ss.update(securities, quotes)
+	} else if s.Name == "generali" {
+		ss := Generali(s)
 		ss.update(securities, quotes)
 	}
 }
@@ -656,12 +660,10 @@ func (s Bankier) update(securities Securities, quotes chan Quote) {
 	url = "https://www.bankier.pl/fundusze/notowania/wszystkie"
 	resp, err = client.Get(url)
 	if err != nil {
-		fmt.Println(err)
 		fmt.Printf("Unable to read %s\n", url)
 	} else {
 		body, _ := ioutil.ReadAll(resp.Body)
 		matches := regex.FindAllStringSubmatch(string(body), -1)
-
 		for _, row := range matches {
 			v := toFloat(row[2])
 			date, _ := time.Parse("2006-01-02", row[3])
@@ -679,6 +681,67 @@ func (s Bankier) update(securities Securities, quotes chan Quote) {
 
 	for _, s := range securities {
 		q, ok := bQuotes[strings.Trim(s.TickerBankier.String, " ")]
+		if ok {
+			quote := Quote{
+				Ticker:  s.Ticker,
+				Open:    q.Open,
+				High:    q.High,
+				Low:     q.Low,
+				Close:   q.Close,
+				Volume:  q.Volume,
+				OpenInt: 0,
+				Date:    q.Date,
+			}
+
+			quotes <- quote
+		} else {
+			fmt.Printf("Update failed for %s\n", s.Ticker)
+		}
+	}
+}
+
+func (s Generali) update(securities Securities, quotes chan Quote) {
+	type gQuote struct {
+		Open   float64
+		High   float64
+		Low    float64
+		Close  float64
+		Volume float64
+		Date   time.Time
+	}
+	var gQuotes = make(map[string]gQuote)
+	var client http.Client
+	var toFloat = func(s string) float64 {
+		s = strings.Replace(s, ",", ".", -1)
+		v, _ := strconv.ParseFloat(s, 64)
+		return v
+	}
+	regex, _ := regexp.Compile(`(?sU)<tr>.+value="([0-9A-Z]{2,3})".+>([0-9-]{10})<.+>([0-9,]+) PLN</td>`)
+	url := "https://www.transakcje.generali-investments.pl/transakcje.generali-investments/portfel/notowaniaFunduszy.do"
+	resp, err := client.Get(url)
+	if err != nil {
+		fmt.Printf("Unable to read %s\n", url)
+	} else {
+		body, _ := ioutil.ReadAll(resp.Body)
+		matches := regex.FindAllStringSubmatch(string(body), -1)
+
+		for _, row := range matches {
+			v := toFloat(row[3])
+			date, _ := time.Parse("2006-01-02", row[2])
+
+			gQuotes[strings.ToUpper(row[1])] = gQuote{
+				Open:   v,
+				High:   v,
+				Low:    v,
+				Close:  v,
+				Volume: 0,
+				Date:   date,
+			}
+		}
+	}
+
+	for _, s := range securities {
+		q, ok := gQuotes[strings.Trim(s.Ticker, " ")]
 		if ok {
 			quote := Quote{
 				Ticker:  s.Ticker,

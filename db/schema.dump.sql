@@ -49,7 +49,8 @@ CREATE TYPE quotes_source AS ENUM (
     'ingturbo',
     'alphavantage',
     'bankier',
-    'sw'
+    'sw',
+    'generali'
 );
 
 
